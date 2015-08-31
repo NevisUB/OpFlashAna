@@ -28,10 +28,10 @@ namespace larlite {
   public:
 
     /// Default constructor
-    MichelReco()
-      : _michel_tree(nullptr)
-    { _name="MichelReco"; _fout=0;}
-
+    MichelReco() :
+      _michel_tree(nullptr)
+    { _name="MichelReco"; _fout=0; _PEmin = 0;}
+    
     /// Default destructor
     virtual ~MichelReco(){}
 

@@ -8,12 +8,12 @@ namespace larlite {
 
   bool MichelReco::initialize() {
 
-    _PEmin = 0;
+    //_PEmin = 0;
     _evt   = 0;
-
+    
     // ttree for michels
     if (_michel_tree) delete _michel_tree;
-
+    
     _michel_tree = new TTree("_michel_tree","michel tree");
     _michel_tree->Branch("_evt",&_evt,"evt/I");
     _michel_tree->Branch("_dt",&_dt,"dt/D");
@@ -52,6 +52,8 @@ namespace larlite {
 	_flashMap[flash.Time()] = i;
     }
 
+    if(!_flashMap.size()) return false;
+    
     // vector holding indexes ordered by time
     std::vector<size_t> orderedFlashIndices;
     for (auto it = _flashMap.begin(); it != _flashMap.end(); it++)
@@ -66,7 +68,13 @@ namespace larlite {
       _dt = _T-_Tpre;
       _PE = flash.TotalPE();
       _PEpre = flashPre.TotalPE();
-      _michel_tree->Fill();
+      
+      if(_PE < _PEmin) {
+	std::cout << "flash had a PE > _PEmin??" << std::endl;
+	throw std::exception();
+      }
+
+_michel_tree->Fill();
     }
       
     _evt += 1;
