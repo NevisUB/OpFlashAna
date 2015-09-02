@@ -10,6 +10,8 @@
 #pragma link off all functions;
 
 #pragma link C++ class larlite::MichelReco+;
+#pragma link C++ class larlite::FlatTreeWriter+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
+
 
