@@ -1,0 +1,6 @@
+#ifndef OPT0FINDER_BASEFLASHHYPOTHESIS_CXX
+#define OPT0FINDER_BASEFLASHHYPOTHESIS_CXX
+
+#include "BaseFlashHypothesis.h"
+
+#endif
