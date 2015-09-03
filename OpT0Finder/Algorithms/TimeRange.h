@@ -75,7 +75,7 @@ namespace flashana {
 
     ~TimeRangeSet(){}
 
-    int RangeIndex(double time);
+    //int RangeIndex(double time);
 
     void Print() const
     {
