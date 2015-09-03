@@ -13,4 +13,7 @@ all:
 clean:
 	@for i in $(SUBDIRS); do ( echo "" && echo "Cleaning $$i..." && cd $$i && $(MAKE) clean && rm -f $(LARLIGHT_LIBDIR)/$$i.* ) || exit $$?; done
 
+doxygen:
+	@doxygen doc/doxygenMyProject.script
+
 
