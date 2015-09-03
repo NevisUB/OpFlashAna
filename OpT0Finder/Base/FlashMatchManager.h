@@ -55,7 +55,7 @@ namespace flashana {
        3) Flash matching algorithm (required)           \n
        4) Returns match information for created TPC object & flash pair which respects the outcome of 3)
      */
-    std::vector<FlashMatch_t> Match();
+    std::vector<flashana::FlashMatch_t> Match();
 
     /// Clears locally kept TPC object (QClusterArray_t) and flash (FlashArray_t), both provided by a user
     void Reset()
