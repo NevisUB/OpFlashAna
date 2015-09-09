@@ -36,11 +36,11 @@ namespace flashana {
     /// Default constructor
     QWeightPoint(const double x_step_size=-1);
     
-    QWeightPoint(const std::vector<double>& pos_x,
-		 const std::vector<double>& pos_y,
-		 const std::vector<double>& pos_z,
-		 const double x_step_size=-1);
-
+    QWeightPoint( const std::vector<double>& pos_x,
+		  const std::vector<double>& pos_y,
+		  const std::vector<double>& pos_z,
+		  const double x_step_size=-1);
+    
     /// Default destructor
     ~QWeightPoint(){}
 

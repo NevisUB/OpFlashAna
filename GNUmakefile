@@ -20,7 +20,7 @@ endif
 #
 # Define directories to be compile upon a global "make"...
 #
-SUBDIRS := OpMichel #ADD_NEW_SUBDIR ... do not remove this comment from this line
+SUBDIRS := OpMichel OpT0Finder #ADD_NEW_SUBDIR ... do not remove this comment from this line
 
 #####################################################################################
 #

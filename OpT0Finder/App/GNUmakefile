@@ -14,7 +14,7 @@ OBJECTS = $(SOURCES:.cxx=.o)
 INCFLAGS  = -I.                       #Include itself
 INCFLAGS += -I$(LARLITE_USERDEVDIR)/OpFlashAna/OpT0Finder
 INCFLAGS += $(shell larlite-config --includes)
-
+INCFLAGS += $(shell basictool-config --includes)
 # platform-specific options
 OSNAME          = $(shell uname -s)
 HOST            = $(shell uname -n)
@@ -25,6 +25,7 @@ include $(LARLITE_BASEDIR)/Makefile/Makefile.${OSNAME}
 
 # call the common GNUmakefile
 LDFLAGS += $(shell larlite-config --libs)
+LDFLAGS += $(shell basictool-config --libs)
 LDFLAGS += -L$(LARLITE_LIBDIR) -lOpFlashAna_OpT0FinderBase
 LDFLAGS += -L$(LARLITE_LIBDIR) -lOpFlashAna_OpT0FinderAlgorithms
 include $(LARLITE_BASEDIR)/Makefile/GNUmakefile.CORE

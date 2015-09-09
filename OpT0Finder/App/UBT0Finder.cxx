@@ -6,6 +6,8 @@
 #include "DataFormat/opflash.h"
 #include "DataFormat/calorimetry.h"
 #include "DataFormat/mctrack.h"
+#include "GeoAlgo/GeoAlgo.h"
+#include "GeoAlgo/GeoLineSegment.h"
 namespace larlite {
 
   bool UBT0Finder::initialize() {
@@ -14,10 +16,14 @@ namespace larlite {
     _tree->Branch("npe",&_npe,"npe/D");
     _tree->Branch("fy",&_flash_y,"fy/D");
     _tree->Branch("fz",&_flash_z,"fz/D");
+    _tree->Branch("tx",&_tpc_x,"tx/D");
     _tree->Branch("ty",&_tpc_y,"ty/D");
     _tree->Branch("tz",&_tpc_z,"tz/D");
     _tree->Branch("ft",&_flash_time,"ft/D");
     _tree->Branch("mct",&_mc_time,"mct/D");
+    _tree->Branch("mcx",&_mc_x,"mcx/D");
+    _tree->Branch("mcy",&_mc_y,"mcy/D");
+    _tree->Branch("mcz",&_mc_z,"mcz/D");
     _tree->Branch("score",&_score,"score/D");
     
     return true;
@@ -127,19 +133,42 @@ namespace larlite {
     */
 
     auto const res = _mgr.Match();
-
+    ::geoalgo::LineSegment line;
+    ::geoalgo::Point_t pt(0,0,0);
+    ::geoalgo::GeoAlgo geoalg;
     for(auto const& match : res) {
       auto const& flash = (*ev_flash)[match.flash_id];
       _flash_y = flash.YCenter();
       _flash_z = flash.ZCenter();
+      _tpc_x   = match.tpc_point.x;
       _tpc_y   = match.tpc_point.y;
       _tpc_z   = match.tpc_point.z;
       _npe     = flash.TotalPE();
       _score   = match.score;
       _flash_time = flash.Time();
-      if(_use_mc)
-	_mc_time = (*ev_mctrack)[match.tpc_id][0].T() * 1.e-3;
-
+      _mc_time = _mc_x = _mc_y = _mc_z = -1;
+      if(_use_mc) {
+	auto const& mct = (*ev_mctrack)[match.tpc_id];
+	_mc_time = mct[0].T() * 1.e-3;
+	double min_dist = 1e12;
+	pt[0] = _tpc_x;
+	pt[1] = _tpc_y;
+	pt[2] = _tpc_z;
+	for(size_t i=0; i<mct.size()-1; ++i) {
+	  auto const& step1 = mct[i];
+	  auto const& step2 = mct[i+1];
+	  line.Start(step1.X(),step1.Y(),step1.Z());
+	  line.End(step2.X(),step2.Y(),step2.Z());
+	  auto const closest_pt = geoalg.ClosestPt(line,pt);
+	  double dist = closest_pt.SqDist(pt);
+	  if(dist < min_dist) {
+	    min_dist = dist;
+	    _mc_x = closest_pt[0];
+	    _mc_y = closest_pt[1];
+	    _mc_z = closest_pt[2];
+	  }
+	}
+      }
       _tree->Fill();
     }
     return true;

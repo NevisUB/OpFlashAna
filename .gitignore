@@ -3,7 +3,11 @@
 *Cint.h
 *Cint.cxx
 *Cint.cc
+*Dict.h
+*Dict.cxx
+*Dict.cc
 .depend
+*dOxygenMyProject
 *.rootmap
 *.so
 *.dylib
@@ -14,4 +18,4 @@
 *~
 *.pcm
 *.swp
-
+*/*/doc

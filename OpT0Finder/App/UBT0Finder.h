@@ -61,13 +61,18 @@ namespace larlite {
     
     TTree* _tree;
     double _npe;
+    double _flash_x;
     double _flash_y;
     double _flash_z;
+    double _tpc_x;
     double _tpc_y;
     double _tpc_z;
     double _score;
     double _flash_time;
     double _mc_time;
+    double _mc_x;
+    double _mc_y;
+    double _mc_z;
   };
 }
 #endif

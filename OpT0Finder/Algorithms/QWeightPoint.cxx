@@ -49,11 +49,14 @@ namespace flashana {
 	  
 	  double weight = 0;
 	  weight = tpc_pt.q / pow(tpc_pt.x - min_pt.x + x_step_size,2);
+	  //pt.x += (tpc_pt.x - min_pt.x + x_step_size) * weight;
 	  pt.y += (tpc_pt.y * weight);
 	  pt.z += (tpc_pt.z * weight);
 	  weight_tot += weight;
 	}
-	
+
+	//pt.x /= weight_tot;
+	pt.x = x_step_size;
 	pt.y /= weight_tot;
 	pt.z /= weight_tot;
 	
@@ -71,12 +74,13 @@ namespace flashana {
 	    
 	    weight += tpc_pt.q / r2;
 	  }
-	  
+
+	  pt.x += (tpc_pt.x - min_pt.x + x_step_size) * weight;
 	  pt.y += (tpc_pt.y * weight);
 	  pt.z += (tpc_pt.z * weight);
 	  weight_tot += weight;
 	}
-	
+	pt.x /= weight_tot;
 	pt.y /= weight_tot;
 	pt.z /= weight_tot;
       }
