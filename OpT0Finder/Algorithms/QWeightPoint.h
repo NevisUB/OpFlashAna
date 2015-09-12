@@ -14,7 +14,7 @@
 #ifndef OPT0FINDER_QWEIGHTPOINT_H
 #define OPT0FINDER_QWEIGHTPOINT_H
 
-#include "Base/BaseFlashHypothesis.h"
+#include "Base/BaseFlashMatch.h"
 
 namespace flashana {
   
@@ -29,7 +29,7 @@ namespace flashana {
      absolute x-position offset in a successive step of _x_step_size value, assigned by a user, \n
      to compute possible flash hypothesis points.\n
   */
-  class QWeightPoint : public BaseFlashHypothesis {
+  class QWeightPoint : public BaseFlashMatch {
     
   public:
     
@@ -44,9 +44,11 @@ namespace flashana {
     /// Default destructor
     ~QWeightPoint(){}
 
-    QCluster_t FlashHypothesis(const QCluster_t&);
+    FlashMatch_t Match(const QCluster_t&, const Flash_t&);
 
-    void SetStepSize(const double x) { _x_step_size = x; }
+    void SetStepSize(const double x)  { _x_step_size = x; }
+
+    void SetMaxZDiff(const double dz) { _zdiff_max = dz;  }
 
   private:
 
@@ -54,6 +56,7 @@ namespace flashana {
     std::vector<double> _pos_y;
     std::vector<double> _pos_z;
     double _x_step_size;
+    double _zdiff_max; ///< allowed diff in z-direction to be considered as a match
   };
 }
 #endif

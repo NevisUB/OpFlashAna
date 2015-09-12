@@ -30,12 +30,13 @@ my_proc.set_ana_output_file("ana.root")
 # Replace with your analysis unit if you wish.
 my_unit = fmwk.UBT0Finder()
 my_proc.add_process(my_unit)
-#my_unit.UseMC()
+my_unit.UseMC()
 #my_unit.Manager().SetAlgo(flashana.QWeightPoint(-1))
 #y_unit.Manager().SetAlgo(flashana.NPtFilter())
+my_unit.Manager().SetVerbosity(0)
 my_unit.Manager().SetAlgo(flashana.QWeightPoint(int(sys.argv[-1])))
 my_unit.Manager().SetAlgo(flashana.MaxNPEWindow())
-my_unit.Manager().SetAlgo(flashana.GeoMatch())
+#my_unit.Manager().SetAlgo(flashana.GeoMatch())
 
 print
 print  "Finished configuring ana_processor. Start event loop!"

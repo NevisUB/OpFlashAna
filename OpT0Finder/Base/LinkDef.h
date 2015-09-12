@@ -9,11 +9,12 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
+#pragma link C++ namespace flashana;
+#pragma link C++ namespace flashana::msg;
 #pragma link C++ class flashana::FlashMatchManager+;
 #pragma link C++ class flashana::BaseAlgorithm+;
 #pragma link C++ class flashana::BaseTPCFilter+;
 #pragma link C++ class flashana::BaseFlashFilter+;
-#pragma link C++ class flashana::BaseFlashHypothesis+;
 #pragma link C++ class flashana::BaseFlashMatch+;
 
 //ADD_NEW_CLASS ... do not change this line

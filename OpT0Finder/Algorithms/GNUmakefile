@@ -15,6 +15,7 @@ INCFLAGS  = -I.                       #Include itself
 INCFLAGS += -I$(LARLITE_USERDEVDIR)/OpFlashAna/OpT0Finder
 
 LDFLAGS += -L$(LARLITE_LIBDIR) -lOpFlashAna_OpT0FinderBase
+LDFLAGS += -L$(shell root-config --libdir) -lMinuit -lMinuit2
 # platform-specific options
 OSNAME          = $(shell uname -s)
 HOST            = $(shell uname -n)

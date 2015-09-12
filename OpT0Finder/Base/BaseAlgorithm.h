@@ -15,12 +15,12 @@
 #define OPT0FINDER_BASEALGORITHM_H
 
 #include "OpT0FinderTypes.h"
-
+#include "ColorPrint.h"
 namespace flashana {
   /**
      \class BaseAlgorithm
   */
-  class BaseAlgorithm{
+  class BaseAlgorithm : public ColorPrint {
     
   public:
     

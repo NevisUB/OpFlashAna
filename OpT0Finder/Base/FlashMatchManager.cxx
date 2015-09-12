@@ -11,7 +11,6 @@ namespace flashana {
   FlashMatchManager::FlashMatchManager()
     : _alg_flash_filter(nullptr)
     , _alg_tpc_filter(nullptr)
-    , _alg_hypothesis(nullptr)
     , _alg_flash_match(nullptr)
   {
     _allow_reuse_flash = true;
@@ -29,10 +28,6 @@ namespace flashana {
       // Flash filter
     case kFlashFilter:
       _alg_flash_filter = (BaseFlashFilter*)alg; break;
-
-      // Flash hypothesis
-    case kFlashHypothesis:
-      _alg_hypothesis   = (BaseFlashHypothesis*)alg; break;
 
       // Flash matching
     case kFlashMatch:
@@ -62,8 +57,8 @@ namespace flashana {
   std::vector<FlashMatch_t> FlashMatchManager::Match()
   {
     // check if required algorithms are provided or not
-    if(!_alg_hypothesis || !_alg_flash_match) 
-      throw OpT0FinderException("TPC point estimator and flash matching algorithms are reuqired! (not attached)");
+    if(!_alg_flash_match) 
+      throw OpT0FinderException("Flash matching algorithms are reuqired! (not attached)");
 
     //
     // Filter stage: for both TPC and Flash
@@ -80,7 +75,12 @@ namespace flashana {
       tpc_index_v.reserve(_tpc_object_v.size());
       for(size_t i=0; i<_tpc_object_v.size(); ++i) tpc_index_v.push_back(i);
     }
-
+    if(_verbosity<=msg::kINFO) {
+      std::stringstream ss;
+      ss << "TPC Filter: " << _tpc_object_v.size() << " => " << tpc_index_v.size() << std::endl;
+      Print(msg::kINFO,__FUNCTION__,ss.str());
+    }
+    
     // Figure out which flash to use: if algorithm provided, ask it. Else use all
     if(_alg_flash_filter)
       flash_index_v = _alg_flash_filter->Filter(_flash_v);
@@ -88,25 +88,10 @@ namespace flashana {
       flash_index_v.reserve(_flash_v.size());
       for(size_t i=0; i<_flash_v.size(); ++i) flash_index_v.push_back(i);
     }
-
-    //
-    // Flash hypothesis stage
-    //
-
-    // Run flash hypothesis algorithm and store returns.
-    // tpc_flash_v stores a list of flash hypothesis points (QCluster_t) per TPC object.
-    QClusterArray_t tpc_flash_v;
-    tpc_flash_v.reserve(tpc_index_v.size());
-    for(auto const& index : tpc_index_v) {
-      // Check if an index from the TPC filter is valid
-      if(index >= _tpc_object_v.size()) {
-	std::stringstream ss;
-	ss << "Invalid TPC object index " << index
-	   << " returned from TPC object filter!";
-	throw OpT0FinderException(ss.str());
-      }
-      // Run FlashHypothesis algorithm to get a candidate flash points
-      tpc_flash_v.emplace_back( _alg_hypothesis->FlashHypothesis( _tpc_object_v[index] ) );
+    if(_verbosity<=msg::kINFO) {
+      std::stringstream ss;
+      ss << "Flash Filter: " << _flash_v.size() << " => " << flash_index_v.size() << std::endl;
+      Print(msg::kINFO,__FUNCTION__,ss.str());
     }
 
     //
@@ -116,28 +101,33 @@ namespace flashana {
     // use multi-map for possible equally-scored matches
     std::multimap<double,FlashMatch_t> score_map;
 
-    // Double loop over a list of hypothesis & flash
+    // Double loop over a list of tpc object & flash
     // Call matching function to inspect the compatibility.
-    for(size_t hypothesis_index=0; hypothesis_index < tpc_flash_v.size(); ++hypothesis_index) {
+    for(size_t tpc_index=0; tpc_index < tpc_index_v.size(); ++tpc_index) {
       
-      auto const& tpc_index = tpc_index_v[hypothesis_index]; // Retrieve TPC object index (to be stored if matched)
-
       // Loop over flash list
       for(auto const& flash_index : flash_index_v) {
 
-	auto const& hypothesis = tpc_flash_v[hypothesis_index]; // Retrieve flash hypothesis
-	auto const& flash = _flash_v[flash_index];              // Retrieve flash
+	auto const& tpc   = _tpc_object_v[tpc_index]; // Retrieve TPC object
+	auto const& flash = _flash_v[flash_index];    // Retrieve flash
 	
-	auto res = _alg_flash_match->Match( hypothesis, flash ); // Run matching
+	auto res = _alg_flash_match->Match( tpc, flash ); // Run matching
 
-	if(res.score<=0) continue; // ignore this match if the score is <= 0
+	// ignore this match if the score is <= 0
+	if(res.score<=0) continue; 
 
 	// Else we store this match. Assign TPC & flash index info
 	res.tpc_id = tpc_index;
 	res.flash_id = flash_index;
 	// For ordering purpose, take an inverse of the score for sorting
-	score_map.emplace( 1./res.score, res); 
-	
+	score_map.emplace( 1./res.score, res);
+
+	if(_verbosity <= msg::kDEBUG) {
+	  std::stringstream ss;
+	  ss << "Candidate Match: " << " TPC=" << tpc_index << " Flash=" << flash_index
+	     << " Score=" << res.score << std::endl;
+	  Print(msg::kINFO,__FUNCTION__,ss.str());
+	}
       }
     }
 
@@ -149,7 +139,7 @@ namespace flashana {
     std::set<ID_t> tpc_used, flash_used;
     // Create also a result container
     std::vector<FlashMatch_t> result;
-    result.reserve(tpc_flash_v.size());
+    result.reserve(tpc_index_v.size());
     // Loop over score map created with matching algorithm
     for(auto& score_info : score_map) {
 
@@ -164,6 +154,12 @@ namespace flashana {
       if(!_allow_reuse_flash && flash_used.find(flash_index) != flash_used.end()) continue;
 
       // Reaching this point means a new match. Yay!
+      if(_verbosity <= msg::kINFO) {
+	std::stringstream ss;
+	ss << "Concrete Match: " << " TPC=" << tpc_index << " Flash=" << flash_index
+	   << " Score=" << match_info.score << std::endl;
+	Print(msg::kINFO,__FUNCTION__,ss.str());
+      }
 
       // Register to a list of a "used" flash and tpc info
       tpc_used.insert(tpc_index);

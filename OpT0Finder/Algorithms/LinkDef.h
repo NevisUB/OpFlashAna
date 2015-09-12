@@ -13,10 +13,11 @@
 #pragma link C++ class flashana::MaxNPEWindow+;
 #pragma link C++ class flashana::TimeRange+;
 #pragma link C++ class flashana::TimeRangeSet+;
-#pragma link C++ class flashana::GeoMatch+;
 #pragma link C++ class flashana::NPtFilter+;
+#pragma link C++ class flashana::QLLMatch+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
+
 
 
 

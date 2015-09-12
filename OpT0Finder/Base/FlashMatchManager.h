@@ -14,16 +14,16 @@
 #ifndef OPT0FINDER_FLASHMATCHMANAGER_H
 #define OPT0FINDER_FLASHMATCHMANAGER_H
 
+#include "ColorPrint.h"
 #include "BaseAlgorithm.h"
 #include "BaseTPCFilter.h"
 #include "BaseFlashFilter.h"
-#include "BaseFlashHypothesis.h"
 #include "BaseFlashMatch.h"
 namespace flashana {
   /**
      \class FlashMatchManager
   */
-  class FlashMatchManager{
+  class FlashMatchManager : public ColorPrint {
 
   public:
     
@@ -51,7 +51,6 @@ namespace flashana {
        The execution takes following steps:             \n
        0) TPC filter algorithm if provided (optional)   \n
        1) Flash filter algorithm if provided (optional) \n
-       2) Flash hypothesis algorithm (required)         \n
        3) Flash matching algorithm (required)           \n
        4) Returns match information for created TPC object & flash pair which respects the outcome of 3)
      */
@@ -69,7 +68,6 @@ namespace flashana {
 
     BaseFlashFilter*     _alg_flash_filter; ///< Flash filter algorithm
     BaseTPCFilter*       _alg_tpc_filter;   ///< TPC filter algorithm
-    BaseFlashHypothesis* _alg_hypothesis;   ///< Flash hypothesis algorithm
     BaseFlashMatch*      _alg_flash_match;  ///< Flash matching algorithm
 
     /// TPC object information collection (provided by a user)

@@ -4,13 +4,15 @@
 #include "QWeightPoint.h"
 #include "Base/OpT0FinderException.h"
 #include <cmath>
+#include <sstream>
 namespace flashana {
 
   QWeightPoint::QWeightPoint(const double x_step_size)
-    : BaseFlashHypothesis()
+    : BaseFlashMatch()
     , _pos_x()
     , _pos_y()
     , _pos_z()
+    , _zdiff_max( 50*50 )
   {
     _x_step_size=x_step_size;
   }
@@ -22,16 +24,19 @@ namespace flashana {
     : _pos_x(pos_x)
     , _pos_y(pos_y)
     , _pos_z(pos_z)
+    , _zdiff_max( 50*50 )
   {
     if(_pos_x.size() != _pos_y.size() || _pos_x.size() != _pos_z.size() )
       throw OpT0FinderException("Unmatching optical detector position array length!");
     _x_step_size = x_step_size;
   }
 
-  QCluster_t QWeightPoint::FlashHypothesis(const QCluster_t& pt_v)
+  FlashMatch_t QWeightPoint::Match(const QCluster_t& pt_v, const Flash_t& flash)
   {
-    QCluster_t res;
-    if(pt_v.empty()) return res;
+    // Prepare the return
+    FlashMatch_t f;
+    QCluster_t flash_hypothesis_v;
+    if(pt_v.empty()) return f;
 
     for(double x_step_size=1; x_step_size<250; x_step_size+=_x_step_size) {
       QPoint_t pt;
@@ -84,9 +89,35 @@ namespace flashana {
 	pt.y /= weight_tot;
 	pt.z /= weight_tot;
       }
-      res.push_back(pt);
+      if(_verbosity <= msg::kINFO) {
+	std::stringstream ss;
+	ss << "Flash Hypothesis Point: " << pt.x << " : " << pt.y << " : " << pt.z << std::endl;
+	Print(msg::kINFO,__FUNCTION__,ss.str());
+      }
+      flash_hypothesis_v.push_back(pt);
     }
-    return res;
+
+
+    // Compute the minimum z-position difference
+    double min_dist = 1e12;
+    ID_t min_id=kINVALID_ID;
+    for(ID_t id=0; id<flash_hypothesis_v.size(); ++id) {
+      auto const& pt = flash_hypothesis_v[id];
+      double dist = pow(pt.z - flash.z,2);
+      if(dist < min_dist) {
+	min_dist = dist;
+	min_id = id;
+      }
+    }
+
+    // If min-diff is bigger than assigned max, return default match (score<0)
+    if(min_dist > _zdiff_max) return f;
+
+    // Assign the score, return
+    f.score = 1./min_dist;
+    f.tpc_point = flash_hypothesis_v[min_id];
+
+    return f;
   }
 
 

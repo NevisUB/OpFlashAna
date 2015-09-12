@@ -3,14 +3,13 @@
 
 #include <vector>
 #include "OpT0FinderConstants.h"
-
+#include <string>
 namespace flashana {
 
   /// Enumerator for different types of algorithm
   enum Algorithm_t {
     kTPCFilter,       ///< Algorithm type to filter out TPC objects from matching candidate list
     kFlashFilter,     ///< Algorithm type to filter out flash from matching candidate list
-    kFlashHypothesis, ///< Algorithm type to make flash hypothesis from TPC object info
     kFlashMatch,      ///< Algorithm type to match flash hypothesis and reconstructed flash
     kAlgorithmTypeMax ///< enum flag for algorithm type count & invalid type
   };
@@ -84,5 +83,40 @@ namespace flashana {
 		 const double& score_value)
     { tpc_id = tpc_id_value; flash_id = flash_id_value; score = score_value; }
   };
+  
+  namespace msg {
+    /// Verbosity message level
+    enum MSGLevel_t {
+      kDEBUG,
+      kINFO,
+      kNORMAL,
+      kWARNING,
+      kERROR,
+      kEXCEPTION,
+            kMSG_TYPE_MAX
+    };
+    
+    const std::string kColorPrefix[kMSG_TYPE_MAX] =
+      {
+	"\033[94m", ///< blue ... DEBUG
+	"\033[92m", ///< green ... INFO
+	"\033[95m", ///< magenta ... NORMAL
+	"\033[93m", ///< yellow ... WARNING
+	"\033[91m", ///< red ... ERROR
+	"\033[5;1;33;41m" ///< red with yellow background ... CRITICAL
+      };
+    ///< Color coding of message
+    
+    const std::string kStringPrefix[kMSG_TYPE_MAX] =
+      {
+	"     [DEBUG]  ", ///< DEBUG message prefix
+	"      [INFO]  ", ///< INFO message prefix
+	"    [NORMAL]  ", ///< NORMAL message prefix
+	"   [WARNING]  ", ///< WARNING message prefix
+	"     [ERROR]  ", ///< ERROR message prefix
+	" [EXCEPTION]  "  ///< CRITICAL message prefix
+      };
+    ///< Prefix of message
+  }
 }
 #endif
