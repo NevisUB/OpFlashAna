@@ -33,8 +33,8 @@ namespace flashana {
     /// Default destructor
     ~QLLMatch(){}
 
-    static QLLMatch& GetME() {
-
+    static QLLMatch& GetME()
+    {
       if(!_me) _me = new QLLMatch;
       return *_me;
     }

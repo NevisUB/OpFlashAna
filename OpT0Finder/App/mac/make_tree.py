@@ -1,4 +1,16 @@
-import sys
+import sys,ROOT
+
+def pmt_pos():
+    xv = ROOT.std.vector("double")()
+    yv = ROOT.std.vector("double")()
+    zv = ROOT.std.vector("double")()
+    for line in open('opt_geo.txt','r').read().split('\n'):
+        words = line.split()
+        if not len(words) == 3: continue
+        xv.push_back(float(words[0]))
+        yv.push_back(float(words[1]))
+        zv.push_back(float(words[2]))
+    return (xv,yv,zv)
 
 if len(sys.argv) < 2:
     msg  = '\n'
@@ -32,9 +44,21 @@ my_unit = fmwk.UBT0Finder()
 my_proc.add_process(my_unit)
 my_unit.UseMC()
 #my_unit.Manager().SetAlgo(flashana.QWeightPoint(-1))
-#y_unit.Manager().SetAlgo(flashana.NPtFilter())
-my_unit.Manager().SetVerbosity(0)
-my_unit.Manager().SetAlgo(flashana.QWeightPoint(int(sys.argv[-1])))
+my_unit.Manager().SetAlgo(flashana.NPtFilter())
+
+#my_unit.Manager().SetVerbosity(0)
+
+xv,yv,zv = pmt_pos()
+
+match_alg = flashana.QWeightPoint(xv,yv,zv,int(sys.argv[-1]))
+#my_unit.Manager().SetAlgo(flashana.QWeightPoint(int(sys.argv[-1])))
+
+
+#match_alg = flashana.QLLMatch.GetME()
+#match_alg.SetOpDetPositions(xv,yv,zv)
+
+my_unit.Manager().SetAlgo(match_alg)
+
 my_unit.Manager().SetAlgo(flashana.MaxNPEWindow())
 #my_unit.Manager().SetAlgo(flashana.GeoMatch())
 

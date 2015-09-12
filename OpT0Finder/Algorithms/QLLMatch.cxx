@@ -39,6 +39,8 @@ namespace flashana {
 
     if(flash.pe_v.size() != _qll_hypothesis_v.size())
       throw OpT0FinderException("Flash contians different # of op-det charge info than provided geo!");
+
+    for(auto& v : _qll_hypothesis_v) v=0;
     
     _trk_x_v.resize(pt_v.size());
     _trk_y_v.resize(pt_v.size());
@@ -67,8 +69,9 @@ namespace flashana {
 
     // Estimate position
     FlashMatch_t res;
+    if(isnan(_qll)) return res;
     res.tpc_point.x = res.tpc_point.y = res.tpc_point.z = 0;
-    res.score = _qll;
+    res.score = 1./_qll;
     double weight_sum = 0;
     for(auto const& pt : pt_v) {
 
@@ -106,8 +109,14 @@ namespace flashana {
 	double r2 = ( pow(_pmt_x_v[pmt_index] - (_trk_x_v[pt_index] + x),2) +
 		      pow(_pmt_y_v[pmt_index] - _trk_y_v[pt_index], 2) +
 		      pow(_pmt_z_v[pmt_index] - _trk_z_v[pt_index], 2) );
+
+	double angle = (_pmt_x_v[pmt_index] - (_trk_x_v[pt_index] + x)) /
+	  sqrt( pow(_pmt_y_v[pmt_index] - _trk_y_v[pt_index],2) +
+		pow(_pmt_z_v[pmt_index] - _trk_y_v[pt_index],2) );
+
+	if(angle<0) angle *= -1;
 	
-	_qll_hypothesis_v[pmt_index] += _trk_q_v[pt_index] / r2;
+	_qll_hypothesis_v[pmt_index] += _trk_q_v[pt_index] * angle / r2;
       }
 
       if(_qll_hypothesis_v[pmt_index] > qmax) qmax = _qll_hypothesis_v[pmt_index];
@@ -179,10 +188,12 @@ namespace flashana {
     MIN_vtx_qll(nPar, grad, Fmin,
 		fValue, ierrflag);
     static bool show = true;
+    /*
     if(show){
       if(Fmin!=MinFval)std::cout<<"Fmin "<<Fmin<<" not equall to "<<MinFval<<std::endl;
       show=false;
     }
+    */
 
     // Transfer the minimization variables:
     _reco_x = reco_x;

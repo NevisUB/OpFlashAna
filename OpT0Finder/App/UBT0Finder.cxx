@@ -35,7 +35,10 @@ namespace larlite {
 
     auto ev_flash = storage->get_data<event_opflash>("opflash");
 
-    if(!ev_flash || ev_flash->empty()) return false;
+    if(!ev_flash || ev_flash->empty()) {
+      std::cout<<"No opflash found. Skipping event: "<<storage->event_id()<<std::endl;
+      return false;
+    }
 
     //auto ev_track = storage->get_data<event_track>("pandoraCosmicKHit");
     auto ev_track = storage->get_data<event_track>("trackkalmanhit");
@@ -73,8 +76,6 @@ namespace larlite {
       if (!ev_mctrack || ev_mctrack->empty()) return false;
       for(auto const& trk : *ev_mctrack) {
 
-	//if(trk.size()<2) continue;
-	
 	::flashana::QCluster_t tpc_obj;
 
 	if(trk.size()>=2) {
@@ -96,10 +97,11 @@ namespace larlite {
 	    pt.y = pt1[1] + dy/2.;
 	    pt.z = pt1[2] + dz/2.;
 	    
-	    tpc_obj.emplace_back(pt);
+	  tpc_obj.emplace_back(pt);
 	  }
 	}
 	_mgr.Emplace(std::move(tpc_obj));
+
       }
     }
     
