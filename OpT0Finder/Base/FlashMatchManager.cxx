@@ -77,7 +77,7 @@ namespace flashana {
     }
     if(_verbosity<=msg::kINFO) {
       std::stringstream ss;
-      ss << "TPC Filter: " << _tpc_object_v.size() << " => " << tpc_index_v.size() << std::endl;
+      ss << "TPC Filter: " << _tpc_object_v.size() << " => " << tpc_index_v.size();
       Print(msg::kINFO,__FUNCTION__,ss.str());
     }
     
@@ -90,7 +90,7 @@ namespace flashana {
     }
     if(_verbosity<=msg::kINFO) {
       std::stringstream ss;
-      ss << "Flash Filter: " << _flash_v.size() << " => " << flash_index_v.size() << std::endl;
+      ss << "Flash Filter: " << _flash_v.size() << " => " << flash_index_v.size();
       Print(msg::kINFO,__FUNCTION__,ss.str());
     }
 
@@ -125,7 +125,7 @@ namespace flashana {
 	if(_verbosity <= msg::kDEBUG) {
 	  std::stringstream ss;
 	  ss << "Candidate Match: " << " TPC=" << tpc_index << " Flash=" << flash_index
-	     << " Score=" << res.score << std::endl;
+	     << " Score=" << res.score;
 	  Print(msg::kINFO,__FUNCTION__,ss.str());
 	}
       }
@@ -157,7 +157,7 @@ namespace flashana {
       if(_verbosity <= msg::kINFO) {
 	std::stringstream ss;
 	ss << "Concrete Match: " << " TPC=" << tpc_index << " Flash=" << flash_index
-	   << " Score=" << match_info.score << std::endl;
+	   << " Score=" << match_info.score;
 	Print(msg::kINFO,__FUNCTION__,ss.str());
       }
 
