@@ -45,7 +45,12 @@ namespace flashana {
 			    const std::vector<double>&,
 			    const std::vector<double>&);
 
-    double ChargeHypothesis(double x);
+    const std::vector<double>& ChargeHypothesis(const QCluster_t&);
+
+    const  QCluster_t& VarTrack(double x);
+
+    double QLL(const std::vector<double>&);
+
   private:
 
     void CallMinuit();
@@ -56,10 +61,8 @@ namespace flashana {
     std::vector<double> _pmt_y_v;
     std::vector<double> _pmt_z_v;
 
-    std::vector<double> _trk_x_v;
-    std::vector<double> _trk_y_v;
-    std::vector<double> _trk_z_v;
-    std::vector<double> _trk_q_v;
+    QCluster_t _raw_trk;
+    QCluster_t _var_trk;
 
     std::vector<double> _qll_hypothesis_v;
     std::vector<double> _flash_pe_v;

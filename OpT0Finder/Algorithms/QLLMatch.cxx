@@ -30,33 +30,23 @@ namespace flashana {
 
   FlashMatch_t QLLMatch::Match(const QCluster_t& pt_v, const Flash_t& flash)
   {
-    if(_qll_hypothesis_v.empty()) {
+    if(_flash_pe_v.empty()) {
       if(_pmt_x_v.empty()) throw OpT0FinderException("No optical detector found!");
-      _qll_hypothesis_v.resize(_pmt_x_v.size(),0);
       _flash_pe_v.resize(_pmt_x_v.size(),0);
-    }else if(_qll_hypothesis_v.size() != _pmt_x_v.size())
+    }else if(_flash_pe_v.size() != _pmt_x_v.size())
       throw OpT0FinderException("PMT dimension has changed!");
 
-    if(flash.pe_v.size() != _qll_hypothesis_v.size())
-      throw OpT0FinderException("Flash contians different # of op-det charge info than provided geo!");
+    _raw_trk.resize(pt_v.size());
+    _var_trk.resize(pt_v.size());
 
-    for(auto& v : _qll_hypothesis_v) v=0;
-    
-    _trk_x_v.resize(pt_v.size());
-    _trk_y_v.resize(pt_v.size());
-    _trk_z_v.resize(pt_v.size());
-    _trk_q_v.resize(pt_v.size());
     double min_x = 1e9;
     for(size_t i=0; i<pt_v.size(); ++i) {
       auto const& pt = pt_v[i];
-      _trk_x_v[i] = pt.x;
-      _trk_y_v[i] = pt.y;
-      _trk_z_v[i] = pt.z;
-      _trk_q_v[i] = pt.q;
+      _raw_trk[i] = pt;
       if(pt.x < min_x) min_x = pt.x;
     }
 
-    for(auto& v : _trk_x_v) v -= min_x;
+    for(auto& pt : _raw_trk) pt.x -= min_x;
 
     double max_pe = 0;
     for(auto const& v : flash.pe_v) if(v > max_pe) max_pe = v;
@@ -73,20 +63,20 @@ namespace flashana {
     res.tpc_point.x = res.tpc_point.y = res.tpc_point.z = 0;
     res.score = 1./_qll;
     double weight_sum = 0;
-    for(auto const& pt : pt_v) {
+    for(auto const& pt : _var_trk) {
 
       double weight = 0;
 
       for(size_t pmt_index = 0; pmt_index < _pmt_x_v.size(); ++pmt_index) {
-
-	double r2 = ( pow( _pmt_x_v[pmt_index] - (pt.x - min_x + _reco_x), 2) +
-		      pow( _pmt_y_v[pmt_index] - pt.y, 2) +
-		      pow( _pmt_z_v[pmt_index] - pt.z, 2) );
-
+	
+	double r2 = ( pow( _pmt_x_v[pmt_index] - pt.x, 2 ) +
+		      pow( _pmt_y_v[pmt_index] - pt.y, 2 ) +
+		      pow( _pmt_z_v[pmt_index] - pt.z, 2 ) );
+	
 	weight += pt.q / r2;
       }
 
-      res.tpc_point.x += (pt.x - min_x + _reco_x) * weight;
+      res.tpc_point.x += pt.x * weight;
       res.tpc_point.y += pt.y * weight;
       res.tpc_point.z += pt.z * weight;
 
@@ -99,24 +89,33 @@ namespace flashana {
     return res;
   }
 
-  double QLLMatch::ChargeHypothesis(double x)
-  {
+  const std::vector<double>& QLLMatch::ChargeHypothesis(const QCluster_t& trk) {
+
     double qmax = 0;
+    if(_pmt_x_v.empty()) Print(msg::kEXCEPTION,__FUNCTION__,"PMT Geometry not set!");
+    if(_qll_hypothesis_v.empty()) _qll_hypothesis_v.resize(_pmt_x_v.size(),0);
+    if(_qll_hypothesis_v.size() != _pmt_x_v.size())
+      Print(msg::kEXCEPTION,__FUNCTION__,"Hypothesis vector length != PMT count");
+
+    for(auto& v : _qll_hypothesis_v) v=0;
+    
     for(size_t pmt_index=0; pmt_index < _pmt_x_v.size(); ++pmt_index) {
 
-      for(size_t pt_index=0; pt_index < _trk_x_v.size(); ++pt_index) {
+      for(size_t pt_index=0; pt_index < trk.size(); ++pt_index) {
 
-	double r2 = ( pow(_pmt_x_v[pmt_index] - (_trk_x_v[pt_index] + x),2) +
-		      pow(_pmt_y_v[pmt_index] - _trk_y_v[pt_index], 2) +
-		      pow(_pmt_z_v[pmt_index] - _trk_z_v[pt_index], 2) );
+	auto const& pt = trk[pt_index];
 
-	double angle = (_pmt_x_v[pmt_index] - (_trk_x_v[pt_index] + x)) /
-	  sqrt( pow(_pmt_y_v[pmt_index] - _trk_y_v[pt_index],2) +
-		pow(_pmt_z_v[pmt_index] - _trk_y_v[pt_index],2) );
+	double dx = _pmt_x_v[pmt_index] - pt.x;
+	double dy = _pmt_y_v[pmt_index] - pt.y;
+	double dz = _pmt_z_v[pmt_index] - pt.z;
+
+	double r2 = ( pow(dx,2) + pow(dy,2) + pow(dz,2) );
+
+	double angle = dx / sqrt(pow(dy,2) + pow(dz,2));
 
 	if(angle<0) angle *= -1;
 	
-	_qll_hypothesis_v[pmt_index] += _trk_q_v[pt_index] * angle / r2;
+	_qll_hypothesis_v[pmt_index] += pt.q * angle / r2;
       }
 
       if(_qll_hypothesis_v[pmt_index] > qmax) qmax = _qll_hypothesis_v[pmt_index];
@@ -124,15 +123,32 @@ namespace flashana {
 
     for(auto& v : _qll_hypothesis_v) v /= qmax;
 
+    return _qll_hypothesis_v;
+  }
+
+  const QCluster_t& QLLMatch::VarTrack(double x)
+  {
+    for(size_t i=0; i<_raw_trk.size(); ++i) {
+
+      _var_trk[i] = _raw_trk[i];
+
+      _var_trk[i].x += x;
+
+    }
+    return _var_trk;
+  }
+
+  double QLLMatch::QLL(const std::vector<double>& qll_hypothesis)
+  {
     double result = 0;
     double nvalid_pmt = 0;
-    for(size_t pmt_index=0; pmt_index < _qll_hypothesis_v.size(); ++pmt_index) {
+    for(size_t pmt_index=0; pmt_index < qll_hypothesis.size(); ++pmt_index) {
 
       if( _flash_pe_v[pmt_index] < 0.01 ) continue;
 
       nvalid_pmt += 1;
       
-      result += std::fabs( _qll_hypothesis_v[pmt_index] - _flash_pe_v[pmt_index] ) * _flash_pe_v[pmt_index];
+      result += std::fabs( qll_hypothesis[pmt_index] - _flash_pe_v[pmt_index] ) * _flash_pe_v[pmt_index];
 
     }
     return result / nvalid_pmt;
@@ -145,7 +161,9 @@ namespace flashana {
 		   Double_t * Xval,
 		   Int_t /*Flag*/){
 
-    Fval = QLLMatch::GetME().ChargeHypothesis(Xval[0]);
+    auto const& var_trk = QLLMatch::GetME().VarTrack(Xval[0]);
+    auto const& qll_hypothesis = QLLMatch::GetME().ChargeHypothesis(var_trk);
+    Fval = QLLMatch::GetME().QLL( qll_hypothesis );
 
     return;
   }  
