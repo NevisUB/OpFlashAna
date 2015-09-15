@@ -111,7 +111,7 @@ namespace flashana {
 
 	double r2 = ( pow(dx,2) + pow(dy,2) + pow(dz,2) );
 
-	double angle = dx / sqrt(pow(dy,2) + pow(dz,2));
+	double angle = dx / sqrt(r2);
 
 	if(angle<0) angle *= -1;
 	

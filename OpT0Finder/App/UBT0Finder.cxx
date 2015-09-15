@@ -24,8 +24,9 @@ namespace larlite {
     _tree->Branch("mcx",&_mc_x,"mcx/D");
     _tree->Branch("mcy",&_mc_y,"mcy/D");
     _tree->Branch("mcz",&_mc_z,"mcz/D");
+    _tree->Branch("mc_dx",&_mc_dx,"mc_dx/D");
     _tree->Branch("score",&_score,"score/D");
-    
+
     return true;
   }
   
@@ -156,6 +157,8 @@ namespace larlite {
 	pt[0] = _tpc_x;
 	pt[1] = _tpc_y;
 	pt[2] = _tpc_z;
+	double min_x=1e9;
+	double max_x=0;
 	for(size_t i=0; i<mct.size()-1; ++i) {
 	  auto const& step1 = mct[i];
 	  auto const& step2 = mct[i+1];
@@ -169,7 +172,11 @@ namespace larlite {
 	    _mc_y = closest_pt[1];
 	    _mc_z = closest_pt[2];
 	  }
+
+	  if(step1.X() < min_x) min_x = step1.X();
+	  if(step1.X() > max_x) max_x = step1.X();
 	}
+	_mc_dx = max_x - min_x;
       }
       _tree->Fill();
     }

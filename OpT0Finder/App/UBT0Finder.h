@@ -73,6 +73,7 @@ namespace larlite {
     double _mc_x;
     double _mc_y;
     double _mc_z;
+    double _mc_dx;
   };
 }
 #endif

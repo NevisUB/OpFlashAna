@@ -77,13 +77,11 @@ namespace flashana {
 	    r2 += pow(tpc_pt.y - _pos_y[i],2);
 	    r2 += pow(tpc_pt.z - _pos_z[i],2);
 	    
-	    double angle = tpc_pt.x - min_pt.x + x_step_size;
-	    if(angle<0) angle *=1;
-	    angle /= sqrt( pow(tpc_pt.y - _pos_y[i],2) + pow(tpc_pt.z - _pos_z[i],2));
-	    angle *= angle;
+	    double angle = (tpc_pt.x - min_pt.x + x_step_size) / r2;
+	    if(angle<0) angle *= -1;
 	    
-	    //weight += tpc_pt.q * angle / r2;
-	    weight += tpc_pt.q / r2;
+	    weight += tpc_pt.q * angle / r2;
+	    //weight += tpc_pt.q / r2;
 	  }
 
 	  pt.x += (tpc_pt.x - min_pt.x + x_step_size) * weight;
