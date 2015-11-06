@@ -3,7 +3,7 @@ CXXFLAGS += -I$(LARLITE_USERDEVDIR)/OpFlashAna
 CXXFLAGS += -I. $(shell root-config --cflags) -g
 
 # Include your shared object lib location
-LDFLAGS += -L$(LARLITE_LIBDIR) -lOpFlashAna_OpMichel 
+LDFLAGS += -L$(LARLITE_LIBDIR) -lOpFlashAna_Base 
 LDFLAGS += $(shell root-config --libs) -lPhysics -lMatrix -g
 
 # platform-specific options
