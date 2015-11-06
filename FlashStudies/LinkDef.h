@@ -9,9 +9,7 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class larlite::MichelReco+;
-#pragma link C++ class larlite::MichelReco_OpDigit+;
+#pragma link C++ class larlite::LateLightComponent+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
-
 
