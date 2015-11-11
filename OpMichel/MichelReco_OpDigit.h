@@ -48,13 +48,18 @@ namespace larlite {
 
     void add(const short& pmt,
 	     const std::vector<short>& ADCmax,
-	     const std::vector<short>& TDCmax);
+	     const std::vector<short>& TDCmax,
+	     const std::vector<short>& wf);
 
     int findMaxima(const std::vector<short>& wf,
 		   const size_t& tick_min,
 		   const size_t& tick_max,
 		   std::vector<short>& ADCmax,
 		   std::vector<short>& TDCmax);
+
+    void findMuonPeak(const std::vector<short>& wf,
+		      size_t& max_tdc,
+		      short& max_adc);
 
     short _baseline;
 
@@ -132,6 +137,38 @@ namespace larlite {
     std::vector<short> _adc29;
     std::vector<short> _adc30;
     std::vector<short> _adc31;
+    std::vector<short> _wf00;
+    std::vector<short> _wf01;
+    std::vector<short> _wf02;
+    std::vector<short> _wf03;
+    std::vector<short> _wf04;
+    std::vector<short> _wf05;
+    std::vector<short> _wf06;
+    std::vector<short> _wf07;
+    std::vector<short> _wf08;
+    std::vector<short> _wf09;
+    std::vector<short> _wf10;
+    std::vector<short> _wf11;
+    std::vector<short> _wf12;
+    std::vector<short> _wf13;
+    std::vector<short> _wf14;
+    std::vector<short> _wf15;
+    std::vector<short> _wf16;
+    std::vector<short> _wf17;
+    std::vector<short> _wf18;
+    std::vector<short> _wf19;
+    std::vector<short> _wf20;
+    std::vector<short> _wf21;
+    std::vector<short> _wf22;
+    std::vector<short> _wf23;
+    std::vector<short> _wf24;
+    std::vector<short> _wf25;
+    std::vector<short> _wf26;
+    std::vector<short> _wf27;
+    std::vector<short> _wf28;
+    std::vector<short> _wf29;
+    std::vector<short> _wf30;
+    std::vector<short> _wf31;
     
   };
 }
