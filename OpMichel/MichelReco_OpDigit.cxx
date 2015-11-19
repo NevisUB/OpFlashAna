@@ -52,6 +52,8 @@ namespace larlite {
 
     auto ev_opdetwaveform = storage->get_data<event_opdetwaveform>("pmtreadout");
 
+    _event = storage->get_data<event_opdetwaveform>("pmtreadout")->event_id();
+
     if ( (!ev_opdetwaveform) or (ev_opdetwaveform->size() == 0) ){
       std::cout << "No waveforms found..." << std::endl;
       return false;
@@ -77,14 +79,17 @@ namespace larlite {
       findMuonPeak(wf,peakTDC[pmt],peakADC[pmt]);
     }
     // find the largest peak:
-    size_t peakTime = 0;
+    _muTime = 0;
     short maxADC = 0;
     for (size_t i=0; i < 32; i++){
-      if (peakADC[i] > maxADC)
-	peakTime = peakTDC[i];
+      //std::cout << "peak for pmt " << i << " : " << peakADC[i] << " @ tick " << peakTDC[i] << std::endl;
+      if (peakADC[i] > maxADC){
+	_muTime = peakTDC[i];
+	maxADC = peakADC[i];
+      }
     }
 
-    std::cout << "peak time is : " << peakTime << std::endl;
+    //std::cout << "peak time is : " << peakTime << std::endl;
     
 
     for (size_t i=0; i < ev_opdetwaveform->size(); i++){
@@ -104,7 +109,7 @@ namespace larlite {
       //std::cout << "PMT " << pmt << " of length " << wf.size() << " has max " << max-2048 << std::endl;      
       
       // loop trhough the wf in search for all the local maxima
-      int thismax = findMaxima(wf,0,1000,ADCmax[pmt],TDCmax[pmt]);
+      int thismax = findMaxima(wf,_muTime,_muTime+1000,ADCmax[pmt],TDCmax[pmt],_muTime);
       // add info to tree
       add(pmt,ADCmax[pmt],TDCmax[pmt],wf);
 
@@ -147,7 +152,8 @@ namespace larlite {
 				     const size_t& tick_min,
 				     const size_t& tick_max,
 				     std::vector<short>& ADCmax,
-				     std::vector<short>& TDCmax)
+				     std::vector<short>& TDCmax,
+				     const size_t& muonTick)
   {
 
     ADCmax.clear();
@@ -180,9 +186,11 @@ namespace larlite {
 	if ( (currentMaxTDC+1) == i){
 	  if ( wf[i]-_baseline > 25){
 	    //std::cout << "found new maxima!" << std::endl;
-	    std::cout << "new max : " << wf[i]-_baseline << std::endl;
+	    //std::cout << "new max : " << wf[i]-_baseline << std::endl;
 	    ADCmax.push_back(wf[i]-_baseline);
-	    TDCmax.push_back(i);
+	    short tdcmax = (short)(i-muonTick);
+	    //std::cout << "tdc max: " << tdcmax << "\t muonTick : " << muonTick << "\t tick i : " << i << std::endl;
+	    TDCmax.push_back(tdcmax);
 	  }
 	}
 	// if not -> re-set the max ADC info
@@ -201,6 +209,7 @@ namespace larlite {
     _tree = new TTree("_tree","michel tree");
     _tree->Branch("_event",&_event,"event/I");
     _tree->Branch("_michel",&_michel,"michel/I");
+    _tree->Branch("_muTime",&_muTime,"muTime/I");
     _tree->Branch("_E",&_E,"E/D");
     _tree->Branch("_t",&_t,"t/D");
     _tree->Branch("_x",&_x,"x/D");
@@ -356,6 +365,8 @@ namespace larlite {
     _E = 0;
     _t = 0;
     _x = _y = _z = 0;
+
+    _muTime = 0;
 
     _michel = 0;
     

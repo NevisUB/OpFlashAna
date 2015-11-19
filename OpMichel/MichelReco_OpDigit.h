@@ -55,7 +55,8 @@ namespace larlite {
 		   const size_t& tick_min,
 		   const size_t& tick_max,
 		   std::vector<short>& ADCmax,
-		   std::vector<short>& TDCmax);
+		   std::vector<short>& TDCmax,
+		   const size_t& muonTick);
 
     void findMuonPeak(const std::vector<short>& wf,
 		      size_t& max_tdc,
@@ -68,6 +69,7 @@ namespace larlite {
     TTree* _tree;
     int _event;
     int _michel;
+    size_t _muTime;
     double _E;
     double _t;
     double _x;
