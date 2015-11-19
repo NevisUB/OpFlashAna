@@ -59,6 +59,7 @@ namespace larlite {
     // in the ~ usec before the beam-gate
     double t_min = 10;
 
+    //std::cout << "fill beamgate map info" << std::endl;
     for (size_t i=0; i < ev_opdetwaveform->size(); i++){
 
       auto const& wf = ev_opdetwaveform->at(i);
@@ -68,8 +69,10 @@ namespace larlite {
       if (pmt >= 32)
 	continue;
 
-      if (wf.size() > 800)
+      if (wf.size() > 800){
+	if (wf.size() > 1501) return true;
 	beamgateMap[pmt] = i;
+      }
 
       // get the time relative to the trigger time
       double wf_t = wf.TimeStamp() - trig_time;
@@ -83,6 +86,7 @@ namespace larlite {
       }// if a couple us before beam-gate
 
     }// for all wfs    
+    //std::cout << "done" << std::endl;
   
     //std::cout << "the minimum time for this event is : " << t_min << std::endl;
     size_t preticks =  (size_t)(-1000*t_min/15.625);
@@ -104,9 +108,11 @@ namespace larlite {
       */
       // for each PMT create a std::vector<short> the length of the beam-gate + pre-samples
       // due to cosmic discriminator
+      //      std::cout << "pad wf" << std::endl;
       std::vector<short> padded_wf(preticks+1501,2048);
       // get the pre-beam-gate, if it exists
       if ( prebeamMap.find(pmt) != prebeamMap.end() ){
+	//	std::cout << "found pre-beam stuff" << std::endl;
 	auto const& wf = ev_opdetwaveform->at(prebeamMap[pmt]);
 	int wf_tick = (int)(-1000*(wf.TimeStamp() - trig_time)/15.625);
 	for (size_t idx=0; idx< wf.size(); idx++){
@@ -118,6 +124,7 @@ namespace larlite {
       // get the in-beamgate window
       if ( beamgateMap.find(pmt) != beamgateMap.end() ){
 	auto const& wf = ev_opdetwaveform->at(beamgateMap[pmt]);
+	//	std::cout << "wf size " << wf.size() << std::endl;
 	for (size_t idx=0; idx< 1500; idx++)
 	  padded_wf[preticks+idx] = wf[idx];
       }// if we find a beam-gate window
@@ -125,39 +132,56 @@ namespace larlite {
       else
 	std::cout << "did not find a beam-gate for this PMT!!! WHAT!!!" << std::endl;
       // add this waveform to the tree
-
+	//      std::cout << "done" << std::endl;
       
       // calculate and subtract baseline for this waveform
       // additionally change scale to PE (for now /20)
+      //std::cout << "calculate baseline" << std::endl;
+      //std::cout << "padded wf size " << padded_wf.size() << std::endl;
       std::vector<double> baseline;
-      std::vector<double> pmt_wf(padded_wf.size(),0.);
+      //std::cout << "padded wf size " << padded_wf.size() << std::endl;
+      std::vector<double> pmt_wf;//(padded_wf.size(),0.);
+      //std::cout << "padded wf size " << padded_wf.size() << std::endl;
+      pmt_wf.resize(preticks+1501);
+      //std::cout << "padded wf size " << padded_wf.size() << std::endl;
       getBaseline(padded_wf,baseline);
+      //std::cout << "done1" << std::endl;
       for (size_t idx=0; idx < pmt_wf.size(); idx++){
 	pmt_wf[idx] = (double)(padded_wf[idx]) - baseline[idx];
 	pmt_wf[idx] /= 20.;
       }
+      //std::cout << "done" << std::endl;
 
       // now find the peaks associated to a muon
+      //std::cout << "find muon peaks" << std::endl;
       std::vector<size_t> muonTicks;
       getMuonPeaksTicks(pmt_wf,muonTicks);
-
+      //std::cout << "done" << std::endl;
       // get the times and amplitudes of the muon peaks
+      //std::cout << "get peak points" << std::endl;
       std::vector<double> muonPeakT;
       std::vector<double> muonPeakA;
       getPoints(pmt_wf,muonTicks,muonPeakT,muonPeakA);
-
+      //std::cout << "done" << std::endl;
       // get the differential waveform
+      //std::cout << "calculate differential vector" << std::endl;
       std::vector<double> wfdiff;
       getDifferential(pmt_wf,wfdiff);
-      
+      //std::cout << "done" << std::endl;
       // get the pulse-times from the differential vector
+      //std::cout << "get hit ticks" << std::endl;
       std::vector<size_t> hit_ticks;
       std::vector<double> hit_times;
       std::vector<double> hit_PEs;
       findPulseTimes(wfdiff,hit_ticks);
+      //std::cout << "done" << std::endl;
       // replace each hit_tick with the local maximum from the wf
+      //std::cout << "find local maxima" << std::endl;
       findLocalMaxima(pmt_wf,hit_ticks);
+      //std::cout << "done" << std::endl;
+      //std::cout << "find points" << std::endl;
       getPoints(pmt_wf,hit_ticks,hit_times,hit_PEs);
+      //std::cout << "done" << std::endl;
 
       for (size_t hh=0; hh < hit_PEs.size(); hh++){
 	_all_hit_time.push_back(hit_times[hh]);
@@ -169,6 +193,7 @@ namespace larlite {
       // PE to be seen at each tick based on the muons
       // found
       std::vector<double> expectation(pmt_wf.size(),0);
+      //std::cout << "find expectation" << std::endl;
       // loop through all ticks
       for (size_t this_tick = 0; this_tick < expectation.size(); this_tick++){
 	// for all muons
@@ -182,6 +207,7 @@ namespace larlite {
 	  if ( (this_time > muon_time) ){
 	    // current time based on tick
 	    double ll = lateLight(this_time-muon_time,0.3*muonamp,1.5);
+	    /*
 	    if (ll > 100){
 	      std::cout << "muon time : " << muon_time << std::endl;
 	      std::cout << "this tick : " << this_tick << std::endl;
@@ -190,16 +216,19 @@ namespace larlite {
 	      std::cout << "A = " << 0.3*muonamp << std::endl;
 	      std::cout << "ll is " << ll << std::endl;
 	    }
+	    */
 	    expectation[this_tick] += ll;
 	    if (expectation[this_tick] > 100)
-	      std::cout << "@ tick " << this_tick << " expectation is " << expectation[this_tick] << std::endl;
+	      //std::cout << "@ tick " << this_tick << " expectation is " << expectation[this_tick] << std::endl;
 	    // if the late-light expectation goes below 1 -> ignore this track from now on
 	    if (ll < 1)
 	      continue;
 	  }// if we've passed this muon along the vector
 	}// for all muons
       }// for all time-ticks
+      //std::cout << "done" << std::endl;
 
+      //std::cout << "get significance" << std::endl;
       // finally, loop through all hits and measure their significance
       for (size_t idx = 0; idx < hit_times.size(); idx++){
 	double hit_t = hit_times[idx];
@@ -217,12 +246,16 @@ namespace larlite {
 	  _hit_time.push_back(hit_t);
 	}
       }// for all hits
+      //std::cout << "done" << std::endl;
 
       add(pmt,padded_wf,expectation,pmt_wf,wfdiff);      
+      //std::cout << "done w/ this pmt" << std::endl << std::endl;
 
     }// for all PMTs
     
     _tree->Fill();
+
+    //std::cout << "done filling" << std::endl;
       
     return true;
   }
@@ -391,6 +424,8 @@ namespace larlite {
 
     // number of steps to look before-after
     size_t N = 5;
+
+    //std::cout << "wf size : " << wf.size() << std::endl;
     
     baseline.clear();
     baseline = std::vector<double>(wf.size(),0.);
@@ -582,6 +617,7 @@ namespace larlite {
     
     _tree = new TTree("_tree","michel tree");
     _tree->Branch("_event",&_event,"event/I");
+    /*
     _tree->Branch("wf00","std::vector<short>",&_wf00);
     _tree->Branch("wf01","std::vector<short>",&_wf01);
     _tree->Branch("wf02","std::vector<short>",&_wf02);
@@ -710,6 +746,7 @@ namespace larlite {
     _tree->Branch("pmt_wf29","std::vector<double>",&_pmt_wf29);
     _tree->Branch("pmt_wf30","std::vector<double>",&_pmt_wf30);
     _tree->Branch("pmt_wf31","std::vector<double>",&_pmt_wf31);
+    */
     _tree->Branch("hit_significance","std::vector<double>",&_hit_significance);
     _tree->Branch("hit_time","std::vector<double>",&_hit_time);
     _tree->Branch("all_hit_time","std::vector<double>",&_all_hit_time);
