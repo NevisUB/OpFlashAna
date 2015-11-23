@@ -31,8 +31,11 @@ my_proc.set_output_file("")
 mergewfs = fmwk.OverlayWF_Paddles()
 mergewfs.setPMTProducer("saturation")
 #mergewfs.setProducer("pmtreadout")
-mergewfs.setTrigProducer("triggersim")
-mergewfs.useMC(True)
+#mergewfs.setTrigProducer("triggersim")
+mergewfs.setTrigProducer("daq")
+mergewfs.useMC(False)
+mergewfs.setMuonPEThresh(1000)#PE
+mergewfs.setDeadTime(3)#usec
 my_proc.add_process(mergewfs)
 
 print

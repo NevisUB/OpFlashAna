@@ -43,6 +43,10 @@ namespace larlite {
     void setTrigProducer(std::string s) { _TRIGproducer = s; }
     // use MC info
     void useMC(bool on) { _useMC = on; }
+    // PE threshold to claim a muon pulse
+    void setMuonPEThresh(double pe) { _muon_PE_thresh = pe; }
+    // set dead-time for muons
+    void setDeadTime(double t) { _deadTime = t; }
 
   protected:
 
@@ -105,7 +109,14 @@ namespace larlite {
     // function to find all muon peaks in a waveform
     void getMuonPeaksTicks(const std::vector<double>& wf,
 			   std::vector<size_t>& muonTicks);
+    // threshold for muon in PE
+    double _muon_PE_thresh;
 
+    // function that applies a dead-time for the muon peaks
+    void applyMuonDeadTime(std::vector<double>& peakTimes,
+			   std::vector<double>& peakAmps);
+    // dead-time for muons
+    double _deadTime;
 
     // function that returns the poisson expectation for
     // the value k for a poisson distribution of mean lambda

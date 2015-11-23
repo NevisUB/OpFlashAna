@@ -17,6 +17,8 @@ namespace larlite {
     _TRIGproducer = "daq";
     _useMC = false;
     _fout = 0;
+    _muon_PE_thresh = 1000;
+    _deadTime = 3;
   }
 
 
@@ -38,7 +40,7 @@ namespace larlite {
       auto ev_mcsh = storage->get_data<event_mcshower>("mcreco");
       
       if ( (!ev_mcsh) or (ev_mcsh->size() == 0) ){
-	//std::cout << "No mcshower found..." << std::endl;
+	std::cout << "No mcshower found..." << std::endl;
 	return false;
       }
       else{
@@ -123,7 +125,7 @@ namespace larlite {
 
       if ( (wf_t < 0) && (wf_t > -2) ){
 
-	std::cout << "Found pre-beam pulse!" << std::endl;
+	//std::cout << "Found pre-beam pulse!" << std::endl;
 	prebeamMap[pmt] = i;
 
 	if (wf_t < t_min)
@@ -192,10 +194,12 @@ namespace larlite {
     // now find the peaks associated to a muon
     std::vector<size_t> muonTicks;
     getMuonPeaksTicks(overlay_wf,muonTicks);
-      // get the times and amplitudes of the muon peaks
+    // get the times and amplitudes of the muon peaks
     std::vector<double> muonPeakT;
     std::vector<double> muonPeakA;
     getPoints(overlay_wf,muonTicks,muonPeakT,muonPeakA);
+    // implement a dead-time for muon pulses
+    //applyMuonDeadTime(muonPeakT,muonPeakA);
     // get the differential waveform
     std::vector<double> wfdiff;
     getDifferential(overlay_wf,wfdiff);
@@ -216,7 +220,7 @@ namespace larlite {
     // prepare a vector that carries the expected
     // PE to be seen at each tick based on the muons
     // found
-    std::vector<double> expectation(overlay_wf.size(),50);
+    std::vector<double> expectation(overlay_wf.size(),30);
     //std::cout << "find expectation" << std::endl;
     // loop through all ticks
     for (size_t this_tick = 0; this_tick < expectation.size(); this_tick++){
@@ -232,10 +236,6 @@ namespace larlite {
 	  // current time based on tick
 	  double ll = lateLight(this_time-muon_time,0.3*muonamp,1.5);
 	  expectation[this_tick] += ll;
-	  if (expectation[this_tick] > 100)
-	    // if the late-light expectation goes below 1 -> ignore this track from now on
-	    if (ll < 1)
-	      continue;
 	}// if we've passed this muon along the vector
       }// for all muons
     }// for all time-ticks
@@ -494,9 +494,7 @@ namespace larlite {
   {
 
     // dead-time for successive peaks
-    size_t deadtime = 20;
-    // threshold for new muon (in PE)
-    double thresh = 2000;
+    size_t deadtime = 200;
 
     // ticks for maxima:
     muonTicks.clear();
@@ -511,7 +509,7 @@ namespace larlite {
       double adc3 = wf[idx+1];
       
       // are we above threshold?
-      if (adc2 < thresh)
+      if (adc2 < _muon_PE_thresh)
 	continue;
 
       // are we at a maximum?
@@ -539,6 +537,34 @@ namespace larlite {
       }// if we are at a maximum
 
     }// for all ticks in wf
+
+    return;
+  }
+
+
+  void OverlayWF_Paddles::applyMuonDeadTime(std::vector<double>& peakTimes,
+					    std::vector<double>& peakAmps)
+  {
+
+    std::vector<double> peakTimesAfter;
+    std::vector<double> peakAmpsAfter;
+    
+    // unless we find a larger pulse -> apply a dead-time
+    double maxTime = 0;
+    double maxAmp  = 0;
+    for (size_t i=0; i < peakTimes.size(); i++){
+
+      if ( ( ((peakTimes[i]-maxTime)*15.625/1000.) > _deadTime) or
+	   ( peakAmps[i] > maxAmp) ){
+	maxAmp = peakAmps[i];
+	maxTime = peakTimes[i];
+	peakTimesAfter.push_back(maxAmp);
+	peakAmpsAfter.push_back(maxTime);
+      }// if it passes the dead-time cut
+    }// for all peaks found
+    
+    peakTimes = peakTimesAfter;
+    peakAmps  = peakAmpsAfter;
 
     return;
   }
