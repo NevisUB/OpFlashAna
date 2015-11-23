@@ -28,7 +28,7 @@ my_proc.set_ana_output_file("michel_reco.root");
 # Specify data output root file name
 my_proc.set_output_file("")
 
-mergewfs = fmwk.MergeWF_Paddles()
+mergewfs = fmwk.OverlayWF_Paddles()
 mergewfs.setPMTProducer("saturation")
 #mergewfs.setProducer("pmtreadout")
 mergewfs.setTrigProducer("triggersim")

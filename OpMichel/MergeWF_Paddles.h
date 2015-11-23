@@ -38,7 +38,11 @@ namespace larlite {
 
     virtual bool finalize();
 
-    void setProducer(std::string s) { _producer = s; }
+    // set producers here
+    void setPMTProducer(std::string s)  { _PMTproducer  = s; }
+    void setTrigProducer(std::string s) { _TRIGproducer = s; }
+    // use MC info
+    void useMC(bool on) { _useMC = on; }
 
   protected:
 
@@ -124,7 +128,12 @@ namespace larlite {
     // measured in sigma
     double LateLightProb(const double& e, const double& o);
 
-    std::string _producer;
+    // producer names
+    std::string _PMTproducer;
+    std::string _TRIGproducer;
+
+    // use MC info
+    bool _useMC;
 
     TTree* _tree;
     int _event;
@@ -261,6 +270,13 @@ namespace larlite {
     std::vector<double> _all_hit_time;
     std::vector<double> _all_hit_ampl;
     std::vector<int>    _all_hit_pmtn;
+    // mc michel info
+    int _michel;
+    double _michel_E;
+    double _michel_t;
+    double _michel_x;
+    double _michel_y;
+    double _michel_z;
     
   };
 }

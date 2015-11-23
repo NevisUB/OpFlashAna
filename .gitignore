@@ -19,3 +19,4 @@
 *.pcm
 *.swp
 */*/doc
+*.ipynb

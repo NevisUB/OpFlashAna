@@ -13,6 +13,7 @@
 #pragma link C++ class larlite::MichelReco_OpDigit+;
 #pragma link C++ class larlite::FlatTreeWriter+;
 #pragma link C++ class larlite::MergeWF_Paddles+;
+#pragma link C++ class larlite::OverlayWF_Paddles+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
 

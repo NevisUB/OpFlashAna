@@ -4,6 +4,7 @@
 #include "MergeWF_Paddles.h"
 #include "DataFormat/opdetwaveform.h"
 #include "DataFormat/trigger.h"
+#include "DataFormat/mcshower.h"
 #include <cmath>
 
 namespace larlite {
@@ -12,6 +13,9 @@ namespace larlite {
     : _tree(nullptr)
   {
     _name = "MergeWF_Paddles";
+    _PMTproducer  = "saturation";
+    _TRIGproducer = "daq";
+    _useMC = false;
     _fout = 0;
   }
 
@@ -27,8 +31,41 @@ namespace larlite {
 
     cleanTree();
 
+
+    // get the MC info, if requested
+    if (_useMC){
+
+      auto ev_mcsh = storage->get_data<event_mcshower>("mcreco");
+      
+      if ( (!ev_mcsh) or (ev_mcsh->size() == 0) ){
+	//std::cout << "No mcshower found..." << std::endl;
+	return false;
+      }
+      else{
+	
+	for (size_t n=0; n < ev_mcsh->size(); n++){
+	  
+	  auto const& shr = ev_mcsh->at(n);
+	  
+	  if (shr.Process() == "muMinusCaptureAtRest"){
+	    //std::cout << "found a michel" << std::endl;
+	    _michel = 1;
+	    _michel_E = shr.DetProfile().E();
+	    _michel_t = shr.DetProfile().T();
+	    _michel_x = shr.DetProfile().X();
+	    _michel_y = shr.DetProfile().Y();
+	    _michel_z = shr.DetProfile().Z();
+	    
+	  }// if a michel
+	}// for all mcshowers
+      }// if we have mcshowers
+    }// if use MC
+
+    if ( (_useMC) && (_michel == 0) )
+      return true;
+
     // get the trigger info
-    auto trig = storage->get_data<trigger>("daq");
+    auto trig = storage->get_data<trigger>(_TRIGproducer);
 
     if ( !trig ){
       std::cout << "No trigger found..." << std::endl;
@@ -39,14 +76,14 @@ namespace larlite {
     double trig_time = trig->TriggerTime();
 
     // get the waveform information
-    auto ev_opdetwaveform = storage->get_data<event_opdetwaveform>(_producer);
+    auto ev_opdetwaveform = storage->get_data<event_opdetwaveform>(_PMTproducer);
 
     if ( (!ev_opdetwaveform) or (ev_opdetwaveform->size() == 0) ){
       std::cout << "No waveforms found..." << std::endl;
       return false;
     }
 
-    _event = storage->get_data<event_opdetwaveform>(_producer)->event_id();
+    _event = storage->get_data<event_opdetwaveform>(_PMTproducer)->event_id();
 
 
     // for each channel, prepare a map that connects
@@ -59,6 +96,9 @@ namespace larlite {
     // in the ~ usec before the beam-gate
     double t_min = 10;
 
+    // keep track of the beam-gate size
+    size_t beamGateTicks = 0;
+
     //std::cout << "fill beamgate map info" << std::endl;
     for (size_t i=0; i < ev_opdetwaveform->size(); i++){
 
@@ -70,7 +110,11 @@ namespace larlite {
 	continue;
 
       if (wf.size() > 800){
-	if (wf.size() > 1501) return true;
+	if (wf.size() > 1511){
+	  std::cout << "Found beam gate that is too large!" << std::endl;
+	  return true;
+	}
+	if (wf.size() > beamGateTicks) { beamGateTicks = wf.size(); }
 	beamgateMap[pmt] = i;
       }
 
@@ -79,6 +123,7 @@ namespace larlite {
 
       if ( (wf_t < 0) && (wf_t > -2) ){
 
+	std::cout << "Found pre-beam pulse!" << std::endl;
 	prebeamMap[pmt] = i;
 
 	if (wf_t < t_min)
@@ -89,10 +134,12 @@ namespace larlite {
     //std::cout << "done" << std::endl;
   
     //std::cout << "the minimum time for this event is : " << t_min << std::endl;
-    size_t preticks =  (size_t)(-1000*t_min/15.625);
+    size_t preticks = 0;
+    if (t_min < 0)
+      preticks =  (size_t)(-1000*t_min/15.625);
     //std::cout << "pre-ticks for this event: " << preticks << std::endl;
     // if t_min is still 10 -> ignore event (does not have a muon)
-    if (t_min > 0)
+    if ( (t_min > 0) and (_useMC == false) )
       return true;
 
     // keep track of the significance of all hits found along
@@ -101,15 +148,16 @@ namespace larlite {
     _hit_time.clear();
 
     for (size_t pmt=0; pmt < 32; pmt++){
+
       /*
       std::cout << "****************************" << std::endl
-		<< "    PMT # " << pmt << "      " << std::endl
+		<< "    PMT # " << pmt << "     " << std::endl
 		<< "****************************" << std::endl;
       */
       // for each PMT create a std::vector<short> the length of the beam-gate + pre-samples
       // due to cosmic discriminator
       //      std::cout << "pad wf" << std::endl;
-      std::vector<short> padded_wf(preticks+1501,2048);
+      std::vector<short> padded_wf(preticks+beamGateTicks,2048);
       // get the pre-beam-gate, if it exists
       if ( prebeamMap.find(pmt) != prebeamMap.end() ){
 	//	std::cout << "found pre-beam stuff" << std::endl;
@@ -124,7 +172,7 @@ namespace larlite {
       // get the in-beamgate window
       if ( beamgateMap.find(pmt) != beamgateMap.end() ){
 	auto const& wf = ev_opdetwaveform->at(beamgateMap[pmt]);
-	//	std::cout << "wf size " << wf.size() << std::endl;
+	//std::cout << "wf size " << wf.size() << std::endl;
 	for (size_t idx=0; idx< 1500; idx++)
 	  padded_wf[preticks+idx] = wf[idx];
       }// if we find a beam-gate window
@@ -132,8 +180,7 @@ namespace larlite {
       else
 	std::cout << "did not find a beam-gate for this PMT!!! WHAT!!!" << std::endl;
       // add this waveform to the tree
-	//      std::cout << "done" << std::endl;
-      
+      //std::cout << "done" << std::endl;
       // calculate and subtract baseline for this waveform
       // additionally change scale to PE (for now /20)
       //std::cout << "calculate baseline" << std::endl;
@@ -250,9 +297,9 @@ namespace larlite {
 
       add(pmt,padded_wf,expectation,pmt_wf,wfdiff);      
       //std::cout << "done w/ this pmt" << std::endl << std::endl;
-
     }// for all PMTs
     
+    //std::cout << "filling tree" << std::endl;
     _tree->Fill();
 
     //std::cout << "done filling" << std::endl;
@@ -484,7 +531,7 @@ namespace larlite {
     // dead-time for successive peaks
     size_t deadtime = 20;
     // threshold for new muon (in PE)
-    double thresh = 6;
+    double thresh = 20;
 
     // ticks for maxima:
     muonTicks.clear();
@@ -617,7 +664,7 @@ namespace larlite {
     
     _tree = new TTree("_tree","michel tree");
     _tree->Branch("_event",&_event,"event/I");
-    /*
+
     _tree->Branch("wf00","std::vector<short>",&_wf00);
     _tree->Branch("wf01","std::vector<short>",&_wf01);
     _tree->Branch("wf02","std::vector<short>",&_wf02);
@@ -650,6 +697,7 @@ namespace larlite {
     _tree->Branch("wf29","std::vector<short>",&_wf29);
     _tree->Branch("wf30","std::vector<short>",&_wf30);
     _tree->Branch("wf31","std::vector<short>",&_wf31);
+
     _tree->Branch("wfdiff00","std::vector<double>",&_wfdiff00);
     _tree->Branch("wfdiff01","std::vector<double>",&_wfdiff01);
     _tree->Branch("wfdiff02","std::vector<double>",&_wfdiff02);
@@ -746,12 +794,18 @@ namespace larlite {
     _tree->Branch("pmt_wf29","std::vector<double>",&_pmt_wf29);
     _tree->Branch("pmt_wf30","std::vector<double>",&_pmt_wf30);
     _tree->Branch("pmt_wf31","std::vector<double>",&_pmt_wf31);
-    */
+
     _tree->Branch("hit_significance","std::vector<double>",&_hit_significance);
     _tree->Branch("hit_time","std::vector<double>",&_hit_time);
     _tree->Branch("all_hit_time","std::vector<double>",&_all_hit_time);
     _tree->Branch("all_hit_ampl","std::vector<double>",&_all_hit_ampl);
     _tree->Branch("all_hit_pmtn","std::vector<int>",&_all_hit_pmtn);
+    _tree->Branch("_michel",&_michel,"michel/I");
+    _tree->Branch("_michel_E",&_michel_E,"michel_E/D");
+    _tree->Branch("_michel_t",&_michel_t,"michel_t/D");
+    _tree->Branch("_michel_x",&_michel_x,"michel_x/D");
+    _tree->Branch("_michel_y",&_michel_y,"michel_y/D");
+    _tree->Branch("_michel_z",&_michel_z,"michel_z/D");
     
     return;
   }
@@ -937,6 +991,12 @@ namespace larlite {
     _all_hit_time.clear();
     _all_hit_ampl.clear();
     _all_hit_pmtn.clear();
+    _michel = 0;
+    _michel_E = -1;
+    _michel_t = -1;
+    _michel_x = -100;
+    _michel_y = -200;
+    _michel_z = -100;
 
     return;
   }
