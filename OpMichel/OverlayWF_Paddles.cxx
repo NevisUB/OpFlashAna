@@ -198,6 +198,11 @@ namespace larlite {
     std::vector<double> muonPeakT;
     std::vector<double> muonPeakA;
     getPoints(overlay_wf,muonTicks,muonPeakT,muonPeakA);
+    // if we found no muons in the first few usec -> exit
+    if (muonPeakT.size() == 0)
+      return true;
+    if (muonPeakT[0] > 0.5)
+      return true;
     // implement a dead-time for muon pulses
     //applyMuonDeadTime(muonPeakT,muonPeakA);
     // get the differential waveform
@@ -220,7 +225,7 @@ namespace larlite {
     // prepare a vector that carries the expected
     // PE to be seen at each tick based on the muons
     // found
-    std::vector<double> expectation(overlay_wf.size(),30);
+    std::vector<double> expectation(overlay_wf.size(),100);
     //std::cout << "find expectation" << std::endl;
     // loop through all ticks
     for (size_t this_tick = 0; this_tick < expectation.size(); this_tick++){
@@ -245,7 +250,7 @@ namespace larlite {
       double hit_t = hit_times[idx];
       double hit_a = hit_PEs[idx];
       // if PE is larger than what counts as a muon -> don't calculate significance for this)
-      if (hit_a > 3000)
+      if (hit_a > _muon_PE_thresh)
 	continue;
       size_t tick = hit_t*1000./15.625;
       if (tick > expectation.size())
