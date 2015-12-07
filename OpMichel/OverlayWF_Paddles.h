@@ -60,6 +60,11 @@ namespace larlite {
     // set verobisty flag
     void setVerbose(bool on) { _verbose = on; }
 
+    // get the signifiance of the value o coming from a 
+    // poisson distribution with expectation e
+    // measured in sigma
+    double LateLightProb(const double& e, const double& o);
+
   protected:
 
     void fillTree();
@@ -152,10 +157,7 @@ namespace larlite {
     // approximation for the inverse error function
     double InvERF(const double& x);
 
-    // get the signifiance of the value o coming from a 
-    // poisson distribution with expectation e
-    // measured in sigma
-    double LateLightProb(const double& e, const double& o);
+
     // baseline PE to be used in developing PE expectation 
     double _baseline_PE;
 
@@ -172,6 +174,8 @@ namespace larlite {
     std::vector<double> _theory_wf;
     std::vector<double> _hit_significance;
     std::vector<double> _hit_time;
+    std::vector<double> _all_muon_time;
+    std::vector<double> _all_muon_ampl;
     std::vector<double> _all_hit_time;
     std::vector<double> _all_hit_ampl;
     std::vector<int>    _all_hit_pmtn;

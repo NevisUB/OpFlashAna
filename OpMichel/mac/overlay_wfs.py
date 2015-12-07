@@ -23,7 +23,7 @@ for x in xrange(len(sys.argv)-1):
 my_proc.set_io_mode(fmwk.storage_manager.kREAD)
 
 # Specify analysis output root file name
-my_proc.set_ana_output_file("michel_reco.root");
+my_proc.set_ana_output_file("cosmic_rate.root");
 
 # Specify data output root file name
 my_proc.set_output_file("")
@@ -34,13 +34,13 @@ mergewfs.setPMTProducer("saturation")
 #mergewfs.setTrigProducer("triggersim")
 mergewfs.setTrigProducer("daq")
 mergewfs.useMC(False)
-mergewfs.setMuonPEThresh(50)#PE
+mergewfs.setMuonPEThresh(12)#PE
 mergewfs.setHitPEDifferentialThresh(1)#PE
 mergewfs.setBaselinePE(2)#PE
 mergewfs.setDeadTime(3)#usec
 mergewfs.setRequireMuonPeak(True)
 mergewfs.setMaximumMuonTime(0.2)
-mergewfs.setMaximumMuonNumber(1)
+mergewfs.setMaximumMuonNumber(100)
 mergewfs.setVerbose(False)
 my_proc.add_process(mergewfs)
 

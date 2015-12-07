@@ -230,6 +230,10 @@ namespace larlite {
     // replace each hit_tick with the local maximum from the wf
     findLocalMaxima(overlay_wf,hit_ticks);
     getPoints(overlay_wf,hit_ticks,hit_times,hit_PEs);
+    
+    // fill trees
+    _all_muon_time = muonPeakT;
+    _all_muon_ampl = muonPeakA;
 
     for (size_t hh=0; hh < hit_PEs.size(); hh++){
       _all_hit_time.push_back(hit_times[hh]);
@@ -512,8 +516,8 @@ namespace larlite {
 					  std::vector<size_t>& muonTicks)
   {
 
-    // dead-time for successive peaks
-    size_t deadtime = 200;
+    // dead-time for successive peaks (in ticks)
+    size_t deadtime = (int)_deadTime*1000./15.625;
 
     // ticks for maxima:
     muonTicks.clear();
@@ -681,6 +685,8 @@ namespace larlite {
     _tree->Branch("all_hit_time","std::vector<double>",&_all_hit_time);
     _tree->Branch("all_hit_ampl","std::vector<double>",&_all_hit_ampl);
     _tree->Branch("all_hit_pmtn","std::vector<int>",&_all_hit_pmtn);
+    _tree->Branch("all_muon_time","std::vector<double>",&_all_muon_time);
+    _tree->Branch("all_muon_ampl","std::vector<double>",&_all_muon_ampl);
     _tree->Branch("_michel",&_michel,"michel/I");
     _tree->Branch("_michel_E",&_michel_E,"michel_E/D");
     _tree->Branch("_michel_t",&_michel_t,"michel_t/D");
@@ -699,6 +705,8 @@ namespace larlite {
     _theory_wf.clear();
     _all_hit_time.clear();
     _all_hit_ampl.clear();
+    _all_muon_time.clear();
+    _all_muon_ampl.clear();
     _all_hit_pmtn.clear();
     _michel = 0;
     _michel_E = -1;
