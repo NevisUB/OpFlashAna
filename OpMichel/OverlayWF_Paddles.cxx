@@ -17,8 +17,14 @@ namespace larlite {
     _TRIGproducer = "daq";
     _useMC = false;
     _fout = 0;
-    _muon_PE_thresh = 1000;
+    _muon_PE_thresh = 50;
+    _hit_PE_differential_thresh = 1;
+    _baseline_PE = 2;
     _deadTime = 3;
+    _require_muon_peak = false;
+    _max_muon_time = 1.0; // usec
+    _max_muon_number = 1;
+    _verbose = false;
   }
 
 
@@ -30,6 +36,8 @@ namespace larlite {
   }
   
   bool OverlayWF_Paddles::analyze(storage_manager* storage) {
+
+    if (_verbose) { std::cout << "event number " << storage->event_id() << std::endl; }
 
     cleanTree();
 
@@ -158,11 +166,12 @@ namespace larlite {
       std::vector<short> padded_wf(preticks+beamGateTicks,2048);
       // get the pre-beam-gate, if it exists
       if ( prebeamMap.find(pmt) != prebeamMap.end() ){
-	//	std::cout << "found pre-beam stuff" << std::endl;
+	if (_verbose) { std::cout << "found pre-beam cosmic discriminator window @ PMT " << pmt << std::endl; }
 	auto const& wf = ev_opdetwaveform->at(prebeamMap[pmt]);
 	int wf_tick = (int)(-1000*(wf.TimeStamp() - trig_time)/15.625);
 	for (size_t idx=0; idx< wf.size(); idx++){
 	  size_t this_tick = preticks-wf_tick+idx;
+
 	  padded_wf[this_tick] = wf[idx];
 	}// for all ticks
       }// if, for this pmt, we found a pre-beamgate window
@@ -184,7 +193,8 @@ namespace larlite {
       pmt_wf.resize(preticks+beamGateTicks);
       getBaseline(padded_wf,baseline);
       for (size_t idx=0; idx < (preticks+beamGateTicks); idx++){
-	double pe = (double)(padded_wf[idx]) - baseline[idx];
+	double pe = ( (double)(padded_wf[idx]) - baseline[idx] ) / 20.;
+	// append to the WF and divide by the gain (now a flat factor of 20 ADC / pe )
 	overlay_wf[idx] += pe;
       }
     }// for all PMTs
@@ -194,14 +204,17 @@ namespace larlite {
     // now find the peaks associated to a muon
     std::vector<size_t> muonTicks;
     getMuonPeaksTicks(overlay_wf,muonTicks);
+    if (_verbose) { std::cout << "\tnum of muons: " << muonTicks.size() << std::endl; }
     // get the times and amplitudes of the muon peaks
     std::vector<double> muonPeakT;
     std::vector<double> muonPeakA;
     getPoints(overlay_wf,muonTicks,muonPeakT,muonPeakA);
     // if we found no muons in the first few usec -> exit
-    if (muonPeakT.size() == 0)
+    if ( (muonPeakT.size() == 0) && (_require_muon_peak) )
       return true;
-    if (muonPeakT[0] > 0.5)
+    if ( (muonPeakT[0] > _max_muon_time) && (_require_muon_peak) )
+      return true;
+    if ( muonPeakT.size() > _max_muon_number )
       return true;
     // implement a dead-time for muon pulses
     //applyMuonDeadTime(muonPeakT,muonPeakA);
@@ -213,6 +226,7 @@ namespace larlite {
     std::vector<double> hit_times;
     std::vector<double> hit_PEs;
     findPulseTimes(wfdiff,hit_ticks);
+    if (_verbose) { std::cout << "\tnum of hits: " << hit_ticks.size() << std::endl; }
     // replace each hit_tick with the local maximum from the wf
     findLocalMaxima(overlay_wf,hit_ticks);
     getPoints(overlay_wf,hit_ticks,hit_times,hit_PEs);
@@ -225,7 +239,7 @@ namespace larlite {
     // prepare a vector that carries the expected
     // PE to be seen at each tick based on the muons
     // found
-    std::vector<double> expectation(overlay_wf.size(),100);
+    std::vector<double> expectation(overlay_wf.size(),_baseline_PE);
     //std::cout << "find expectation" << std::endl;
     // loop through all ticks
     for (size_t this_tick = 0; this_tick < expectation.size(); this_tick++){
@@ -235,7 +249,6 @@ namespace larlite {
 	double muon_time = muonPeakT[m] - 0.05; // account for shaping time
 	// are we passed this time in the vector?
 	// if not -> this exponential does not contribute
-	size_t muon_tick = (size_t)(muon_time*1000./15.625);
 	double this_time = this_tick*15.625/1000.;
 	if ( (this_time > muon_time) ){
 	  // current time based on tick
@@ -272,7 +285,8 @@ namespace larlite {
 
     _tree->Fill();
 
-    //std::cout << "done filling" << std::endl;
+
+    if (_verbose) { std::cout << std::endl; }
       
     return true;
   }
@@ -332,7 +346,7 @@ namespace larlite {
       double t3 = wfdiff[i+1];
 
       // first find a maximum above a certain threshold
-      if ( (t2 > t1) && (t2 > t3) && (t2 > 20.15) ){
+      if ( (t2 > t1) && (t2 > t3) && (t2 > _hit_PE_differential_thresh) ){
 	// now open a window for several ticks
 	// to find the zero-crossing
 	//std::cout << "found a maximum @ time " << i*15.625/1000. << std::endl;

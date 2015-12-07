@@ -45,8 +45,20 @@ namespace larlite {
     void useMC(bool on) { _useMC = on; }
     // PE threshold to claim a muon pulse
     void setMuonPEThresh(double pe) { _muon_PE_thresh = pe; }
+    // PE threshold to claim a hit
+    void setHitPEDifferentialThresh(double pe) { _hit_PE_differential_thresh = pe; }
     // set dead-time for muons
     void setDeadTime(double t) { _deadTime = t; }
+    // set the baseline PE (what to expect at any given moment)
+    void setBaselinePE(double pe) { _baseline_PE = pe; }
+    // set whether to require a muon peak
+    void setRequireMuonPeak(bool on) { _require_muon_peak = on; }
+    // set maximum time for muon peak
+    void setMaximumMuonTime(double t) { _max_muon_time = t; }
+    // set maximum number of muons in event's beam-gate RO window
+    void setMaximumMuonNumber(size_t n) { _max_muon_number = n; }
+    // set verobisty flag
+    void setVerbose(bool on) { _verbose = on; }
 
   protected:
 
@@ -54,12 +66,24 @@ namespace larlite {
 
     void cleanTree();
 
+    // verbosity boolean
+    bool _verbose;
+
+    // require muon peak?
+    bool _require_muon_peak;
+    // maximum muon time (since stitched wf starts) [ us ]
+    double _max_muon_time;
+    // maximum number of muons allowed in event's beam-gate RO window
+    size_t _max_muon_number;
+
     // find the time of a pulse based on the differential
     // of the waveform
     // search for peaks followed by zero-crossings
     // the zero-crossing is the time of the pulse
     void findPulseTimes(const std::vector<double>& wfdiff,
 			std::vector<size_t>& pulseTicks);
+    // PE threshold for hit amplitude
+    double _hit_PE_differential_thresh;
 
     
     // for each hit tick time, search in a neightborhood
@@ -132,6 +156,8 @@ namespace larlite {
     // poisson distribution with expectation e
     // measured in sigma
     double LateLightProb(const double& e, const double& o);
+    // baseline PE to be used in developing PE expectation 
+    double _baseline_PE;
 
     // producer names
     std::string _PMTproducer;
