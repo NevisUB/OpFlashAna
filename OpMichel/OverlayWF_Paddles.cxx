@@ -25,6 +25,41 @@ namespace larlite {
     _max_muon_time = 1.0; // usec
     _max_muon_number = 1;
     _verbose = false;
+    _pmt_wfs.resize(32);
+    _pmt_pos.resize(32);
+    // load the PMT positons
+    _pmt_pos[26] = std::pair<double,double>(55.249, 87.7605);
+    _pmt_pos[25] = std::pair<double,double>(55.249, 128.355);
+    _pmt_pos[27] = std::pair<double,double>(27.431, 51.1015);
+    _pmt_pos[28] = std::pair<double,double>(-0.303, 173.743);
+    _pmt_pos[29] = std::pair<double,double>(-28.576, 50.4745);
+    _pmt_pos[31] = std::pair<double,double>(-56.615, 87.8695);
+    _pmt_pos[30] = std::pair<double,double>(-56.203, 128.179);
+    _pmt_pos[20] = std::pair<double,double>(54.646, 287.976);
+    _pmt_pos[19] = std::pair<double,double>(54.693, 328.212);
+    _pmt_pos[22] = std::pair<double,double>(-0.829, 242.014);
+    _pmt_pos[21] = std::pair<double,double>(-0.706, 373.839);
+    _pmt_pos[24] = std::pair<double,double>(-56.261, 287.639);
+    _pmt_pos[23] = std::pair<double,double>(-57.022, 328.341);
+    _pmt_pos[14] = std::pair<double,double>(55.771, 500.134);
+    _pmt_pos[13] = std::pair<double,double>(55.822, 540.929);
+    _pmt_pos[16] = std::pair<double,double>(-0.875, 453.096);
+    _pmt_pos[15] = std::pair<double,double>(-0.549, 585.284);
+    _pmt_pos[18] = std::pair<double,double>(-56.323, 500.221);
+    _pmt_pos[17] = std::pair<double,double>(-56.205, 540.616);
+    _pmt_pos[8] = std::pair<double,double>(55.8, 711.073);
+    _pmt_pos[7] = std::pair<double,double>(55.625, 751.884);
+    _pmt_pos[10] = std::pair<double,double>(-0.051, 664.203);
+    _pmt_pos[9] = std::pair<double,double>(-0.502, 796.208);
+    _pmt_pos[12] = std::pair<double,double>(-56.408, 711.274);
+    _pmt_pos[11] = std::pair<double,double>(-56.284, 751.905);
+    _pmt_pos[1] = std::pair<double,double>(55.822, 911.066);
+    _pmt_pos[0] = std::pair<double,double>(55.313, 951.861);
+    _pmt_pos[2] = std::pair<double,double>(27.607, 989.712);
+    _pmt_pos[3] = std::pair<double,double>(-0.722, 865.598);
+    _pmt_pos[4] = std::pair<double,double>(-28.625, 990.356);
+    _pmt_pos[6] = std::pair<double,double>(-56.309, 911.939);
+    _pmt_pos[5] = std::pair<double,double>(-56.514, 951.865);
   }
 
 
@@ -108,7 +143,7 @@ namespace larlite {
 
     // keep track of the beam-gate size
     size_t beamGateTicks = 0;
-
+    
     //std::cout << "fill beamgate map info" << std::endl;
     for (size_t i=0; i < ev_opdetwaveform->size(); i++){
 
@@ -159,6 +194,8 @@ namespace larlite {
     
     // prepare vector to hold overlay of all WFs
     std::vector<double> overlay_wf(preticks+beamGateTicks,0);
+    // clear and re-size per-PMT waveforms
+    resizeWaveforms(preticks+beamGateTicks);
 
     // do baseline subtraction, then add wf of each PMT to the overlay
     for (size_t pmt=0; pmt < 32; pmt++){
@@ -196,6 +233,7 @@ namespace larlite {
 	double pe = ( (double)(padded_wf[idx]) - baseline[idx] ) / 20.;
 	// append to the WF and divide by the gain (now a flat factor of 20 ADC / pe )
 	overlay_wf[idx] += pe;
+	_pmt_wfs[pmt][idx] += pe;
       }
     }// for all PMTs
 
@@ -216,6 +254,13 @@ namespace larlite {
       return true;
     if ( muonPeakT.size() > _max_muon_number )
       return true;
+    // find the muon flashes YZ coordinates
+    for (auto const& muon : muonTicks){
+      auto YZ = getPulseYZ(muon);
+      _all_muon_Y.push_back(YZ.first);
+      _all_muon_Z.push_back(YZ.second);
+    }
+    
     // implement a dead-time for muon pulses
     //applyMuonDeadTime(muonPeakT,muonPeakA);
     // get the differential waveform
@@ -279,6 +324,14 @@ namespace larlite {
 	// add to the significance tally for this event
 	_hit_significance.push_back(significance);
 	_hit_time.push_back(hit_t);
+	// if significance is large enough -> find (Y,Z) coordinate of hit
+	if (significance > 3.){
+	  _sig_hit_idx.push_back(_hit_time.size()-1);
+	  auto YZ = getPulseYZ(hit_ticks[idx]);
+	  _sig_hit_Y.push_back(YZ.first);
+	  _sig_hit_Z.push_back(YZ.second);
+	  //std::cout << "hit yz : " << YZ.first << ", " << YZ.second << std::endl;
+	}// if this is a significant hit
       }
     }// for all hits
 
@@ -302,6 +355,15 @@ namespace larlite {
     }
 
     return true;
+  }
+
+
+  void OverlayWF_Paddles::resizeWaveforms(const size_t& nticks){
+
+    for (size_t pmt=0; pmt < _pmt_wfs.size(); pmt++)
+      _pmt_wfs[pmt] = std::vector<double>(nticks,0.);
+
+    return;
   }
 
 
@@ -657,8 +719,6 @@ namespace larlite {
     else
       prob = PoissonCDF(ex,ob);
     
-    //std::cout << "\tCDF prob : " << prob << std::endl;
-    
     // if the probability is 1 -> return a significance of 20
     if (prob >= 1)
       return 20;
@@ -666,10 +726,50 @@ namespace larlite {
     // otherwise use error function to calculate significance
     double sig = sqrt(2)*InvERF(prob);
     
-    //std::cout << "\t significance : " << sig << std::endl;
-
     return sig;
   }
+
+
+  std::pair<double,double> OverlayWF_Paddles::getPulseYZ(const size_t& tick){
+
+    std::pair<double,double> YZ(0,0);
+
+    // define tick-interval in which to search for maximum peak
+    size_t max_tick = tick+3;
+    size_t min_tick = tick-3;
+    if (min_tick < 0)
+      min_tick = 0;
+    if (max_tick >= _pmt_wfs[0].size())
+      min_tick = _pmt_wfs[0].size()-1;
+
+    // keep track of total PE of flash
+    size_t pe_tot = 0.;
+
+    
+    // loop through all waveforms
+    for (size_t pmt=0; pmt < _pmt_wfs.size(); pmt++){
+      
+      double max = 0.;
+      // find the max tick in a neighborhood of this tick
+      for (size_t i= min_tick; i < max_tick; i++){
+	if (_pmt_wfs[pmt][i] > max)
+	  max = _pmt_wfs[pmt][i];
+      }
+
+      YZ.first  += _pmt_pos[pmt].first * max;
+      YZ.second += _pmt_pos[pmt].second * max;
+      pe_tot += max;
+
+    }
+
+    YZ.first  /= pe_tot;
+    YZ.second /= pe_tot;
+    
+    //std::cout << "[YZ] of muon: [ " << YZ.first << ", " << YZ.second << " ]" << std::endl;
+
+    return YZ;
+  }
+  
 
   void OverlayWF_Paddles::fillTree(){
 
@@ -687,6 +787,11 @@ namespace larlite {
     _tree->Branch("all_hit_pmtn","std::vector<int>",&_all_hit_pmtn);
     _tree->Branch("all_muon_time","std::vector<double>",&_all_muon_time);
     _tree->Branch("all_muon_ampl","std::vector<double>",&_all_muon_ampl);
+    _tree->Branch("all_muon_Y","std::vector<double>",&_all_muon_Y);
+    _tree->Branch("all_muon_Z","std::vector<double>",&_all_muon_Z);
+    _tree->Branch("sig_hit_idx","std::vector<int>",&_sig_hit_idx);
+    _tree->Branch("sig_hit_Y","std::vector<double>",&_sig_hit_Y);
+    _tree->Branch("sig_hit_Z","std::vector<double>",&_sig_hit_Z);
     _tree->Branch("_michel",&_michel,"michel/I");
     _tree->Branch("_michel_E",&_michel_E,"michel_E/D");
     _tree->Branch("_michel_t",&_michel_t,"michel_t/D");
@@ -705,8 +810,13 @@ namespace larlite {
     _theory_wf.clear();
     _all_hit_time.clear();
     _all_hit_ampl.clear();
+    _sig_hit_idx.clear();
+    _sig_hit_Y.clear();
+    _sig_hit_Z.clear();
     _all_muon_time.clear();
     _all_muon_ampl.clear();
+    _all_muon_Y.clear();
+    _all_muon_Z.clear();
     _all_hit_pmtn.clear();
     _michel = 0;
     _michel_E = -1;

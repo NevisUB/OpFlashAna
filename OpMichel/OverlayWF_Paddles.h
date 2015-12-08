@@ -81,6 +81,9 @@ namespace larlite {
     // maximum number of muons allowed in event's beam-gate RO window
     size_t _max_muon_number;
 
+    // resize waveforms for all 32 PMTs
+    void resizeWaveforms(const size_t& nticks);
+
     // find the time of a pulse based on the differential
     // of the waveform
     // search for peaks followed by zero-crossings
@@ -157,6 +160,12 @@ namespace larlite {
     // approximation for the inverse error function
     double InvERF(const double& x);
 
+    // given a time-tick search the maximum ADC in a small region
+    // around this tick for all PMTs
+    // and calcuulate a "flash position" by making
+    // a weighted average of the PEs seen by each PMT
+    std::pair<double,double> getPulseYZ(const size_t& tick);
+
 
     // baseline PE to be used in developing PE expectation 
     double _baseline_PE;
@@ -176,9 +185,14 @@ namespace larlite {
     std::vector<double> _hit_time;
     std::vector<double> _all_muon_time;
     std::vector<double> _all_muon_ampl;
+    std::vector<double> _all_muon_Y;
+    std::vector<double> _all_muon_Z;
     std::vector<double> _all_hit_time;
     std::vector<double> _all_hit_ampl;
     std::vector<int>    _all_hit_pmtn;
+    std::vector<int>    _sig_hit_idx; // index in _all_hit_*
+    std::vector<double> _sig_hit_Y;   // Y position of this hit
+    std::vector<double> _sig_hit_Z;   // Z position of this hit
     // mc michel info
     int _michel;
     double _michel_E;
@@ -186,7 +200,13 @@ namespace larlite {
     double _michel_x;
     double _michel_y;
     double _michel_z;
-    
+
+    // per-PMT waveforms
+    std::vector< std::vector<double> > _pmt_wfs;
+
+    // per-PMT positions (YZ)
+    std::vector< std::pair<double,double> > _pmt_pos;
+
   };
 }
 #endif
