@@ -325,12 +325,12 @@ namespace larlite {
 	_hit_significance.push_back(significance);
 	_hit_time.push_back(hit_t);
 	// if significance is large enough -> find (Y,Z) coordinate of hit
-	if (significance > 3.){
+	if (significance > 5.){
 	  _sig_hit_idx.push_back(_hit_time.size()-1);
 	  auto YZ = getPulseYZ(hit_ticks[idx]);
 	  _sig_hit_Y.push_back(YZ.first);
 	  _sig_hit_Z.push_back(YZ.second);
-	  //std::cout << "hit yz : " << YZ.first << ", " << YZ.second << std::endl;
+	  std::cout << "hit yz : " << YZ.first << ", " << YZ.second << std::endl;
 	}// if this is a significant hit
       }
     }// for all hits
@@ -745,7 +745,6 @@ namespace larlite {
     // keep track of total PE of flash
     size_t pe_tot = 0.;
 
-    
     // loop through all waveforms
     for (size_t pmt=0; pmt < _pmt_wfs.size(); pmt++){
       
@@ -758,12 +757,15 @@ namespace larlite {
 
       YZ.first  += _pmt_pos[pmt].first * max;
       YZ.second += _pmt_pos[pmt].second * max;
-      pe_tot += max;
+      pe_tot    += max;
 
     }
 
     YZ.first  /= pe_tot;
     YZ.second /= pe_tot;
+
+    if (YZ.second > 1000)
+      std::cout << "Z: " << YZ.second << "\tpe tot: " << pe_tot << std::endl;
     
     //std::cout << "[YZ] of muon: [ " << YZ.first << ", " << YZ.second << " ]" << std::endl;
 

@@ -34,13 +34,13 @@ mergewfs.setPMTProducer("saturation")
 #mergewfs.setTrigProducer("triggersim")
 mergewfs.setTrigProducer("daq")
 mergewfs.useMC(False)
-mergewfs.setMuonPEThresh(12)#PE
+mergewfs.setMuonPEThresh(50)#PE
 mergewfs.setHitPEDifferentialThresh(1)#PE
 mergewfs.setBaselinePE(2)#PE
 mergewfs.setDeadTime(3)#usec
 mergewfs.setRequireMuonPeak(True)
 mergewfs.setMaximumMuonTime(0.2)
-mergewfs.setMaximumMuonNumber(100)
+mergewfs.setMaximumMuonNumber(1)
 mergewfs.setVerbose(False)
 my_proc.add_process(mergewfs)
 
