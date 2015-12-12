@@ -330,7 +330,7 @@ namespace larlite {
 	  auto YZ = getPulseYZ(hit_ticks[idx]);
 	  _sig_hit_Y.push_back(YZ.first);
 	  _sig_hit_Z.push_back(YZ.second);
-	  std::cout << "hit yz : " << YZ.first << ", " << YZ.second << std::endl;
+	  //std::cout << "hit yz : " << YZ.first << ", " << YZ.second << std::endl;
 	}// if this is a significant hit
       }
     }// for all hits
@@ -737,13 +737,13 @@ namespace larlite {
     // define tick-interval in which to search for maximum peak
     size_t max_tick = tick+3;
     size_t min_tick = tick-3;
-    if (min_tick < 0)
+    if (tick < 3)
       min_tick = 0;
     if (max_tick >= _pmt_wfs[0].size())
       min_tick = _pmt_wfs[0].size()-1;
 
     // keep track of total PE of flash
-    size_t pe_tot = 0.;
+    double pe_tot = 0.;
 
     // loop through all waveforms
     for (size_t pmt=0; pmt < _pmt_wfs.size(); pmt++){
@@ -763,12 +763,7 @@ namespace larlite {
 
     YZ.first  /= pe_tot;
     YZ.second /= pe_tot;
-
-    if (YZ.second > 1000)
-      std::cout << "Z: " << YZ.second << "\tpe tot: " << pe_tot << std::endl;
     
-    //std::cout << "[YZ] of muon: [ " << YZ.first << ", " << YZ.second << " ]" << std::endl;
-
     return YZ;
   }
   
