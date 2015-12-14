@@ -24,6 +24,8 @@ namespace larlite {
     _require_muon_peak = false;
     _max_muon_time = 1.0; // usec
     _max_muon_number = 1;
+    _ll_amp = 0.3;
+    _ll_tau = 1.5;
     _verbose = false;
     _pmt_wfs.resize(32);
     _pmt_pos.resize(32);
@@ -301,7 +303,7 @@ namespace larlite {
 	double this_time = this_tick*15.625/1000.;
 	if ( (this_time > muon_time) ){
 	  // current time based on tick
-	  double ll = lateLight(this_time-muon_time,0.3*muonamp,1.5);
+	  double ll = lateLight(this_time-muon_time,_ll_amp*muonamp,_ll_tau);
 	  expectation[this_tick] += ll;
 	}// if we've passed this muon along the vector
       }// for all muons

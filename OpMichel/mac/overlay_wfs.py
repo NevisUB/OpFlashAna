@@ -41,6 +41,8 @@ mergewfs.setDeadTime(3)#usec
 mergewfs.setRequireMuonPeak(True)
 mergewfs.setMaximumMuonTime(0.2)
 mergewfs.setMaximumMuonNumber(1)
+mergewfs.setLateLightAmplitude(0.25)
+mergewfs.setLateLightTimeConstant(0.85)
 mergewfs.setVerbose(False)
 my_proc.add_process(mergewfs)
 

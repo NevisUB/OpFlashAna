@@ -20,3 +20,4 @@
 *.swp
 */*/doc
 *.ipynb
+*.out

@@ -57,6 +57,10 @@ namespace larlite {
     void setMaximumMuonTime(double t) { _max_muon_time = t; }
     // set maximum number of muons in event's beam-gate RO window
     void setMaximumMuonNumber(size_t n) { _max_muon_number = n; }
+    // set the late-light amplitude factor
+    void setLateLightAmplitude(double a) { _ll_amp = a; }
+    // set the late-light time-constant
+    void setLateLightTimeConstant(double t) { _ll_tau = t; }
     // set verobisty flag
     void setVerbose(bool on) { _verbose = on; }
 
@@ -122,6 +126,10 @@ namespace larlite {
     double lateLight(const double& time,
 		     const double& A,
 		     const double& tau);
+    // late-light amplitude factor
+    double _ll_amp;
+    // late-light time-constant
+    double _ll_tau;
 
     
     // function to get rms and baseline
