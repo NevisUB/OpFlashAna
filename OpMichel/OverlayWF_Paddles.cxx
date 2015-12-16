@@ -84,7 +84,7 @@ namespace larlite {
 
       auto ev_mcsh = storage->get_data<event_mcshower>("mcreco");
       
-      if ( (!ev_mcsh) or (ev_mcsh->size() == 0) ){
+      if ( (!ev_mcsh) ){
 	std::cout << "No mcshower found..." << std::endl;
 	return false;
       }
@@ -108,8 +108,8 @@ namespace larlite {
       }// if we have mcshowers
     }// if use MC
 
-    if ( (_useMC) && (_michel == 0) )
-      return true;
+    //if ( (_useMC) && (_michel == 0) )
+    //  return true;
 
     // get the trigger info
     auto trig = storage->get_data<trigger>(_TRIGproducer);
@@ -250,12 +250,18 @@ namespace larlite {
     std::vector<double> muonPeakA;
     getPoints(overlay_wf,muonTicks,muonPeakT,muonPeakA);
     // if we found no muons in the first few usec -> exit
-    if ( (muonPeakT.size() == 0) && (_require_muon_peak) )
+    if ( (muonPeakT.size() == 0) && (_require_muon_peak) ){
+      if (_verbose) { std::cout << "-> no muon but we require a muon peak -> return" << std::endl; }
       return true;
-    if ( (muonPeakT[0] > _max_muon_time) && (_require_muon_peak) )
+    }
+    if ( (muonPeakT[0] > _max_muon_time) && (_require_muon_peak) ){
+      if (_verbose) { std::cout << "-> muon peak time beyond maximum allowed time -> return" << std::endl; }
       return true;
-    if ( muonPeakT.size() > _max_muon_number )
+    }
+    if ( muonPeakT.size() > _max_muon_number ){
+      if (_verbose) { std::cout << "-> too many muons -> return" << std::endl; }
       return true;
+    }
     // find the muon flashes YZ coordinates
     for (auto const& muon : muonTicks){
       auto YZ = getPulseYZ(muon);

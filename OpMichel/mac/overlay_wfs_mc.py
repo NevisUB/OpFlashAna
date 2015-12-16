@@ -31,15 +31,15 @@ my_proc.set_output_file("")
 mergewfs = fmwk.OverlayWF_Paddles()
 mergewfs.setPMTProducer("saturation")
 #mergewfs.setProducer("pmtreadout")
-#mergewfs.setTrigProducer("triggersim")
-mergewfs.setTrigProducer("daq")
-mergewfs.useMC(False)
+mergewfs.setTrigProducer("triggersim")
+#mergewfs.setTrigProducer("daq")
+mergewfs.useMC(True)
 mergewfs.setMuonPEThresh(50)#PE
 mergewfs.setHitPEDifferentialThresh(1)#PE
 mergewfs.setBaselinePE(2)#PE
 mergewfs.setDeadTime(3)#usec
 mergewfs.setRequireMuonPeak(True)
-mergewfs.setMaximumMuonTime(0.2)
+mergewfs.setMaximumMuonTime(25)
 mergewfs.setMaximumMuonNumber(1)
 mergewfs.setLateLightAmplitude(0.25)
 mergewfs.setLateLightTimeConstant(0.85)
