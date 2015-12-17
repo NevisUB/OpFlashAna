@@ -51,7 +51,7 @@ namespace larlite {
     auto run    = ev_opdetwaveform->run();
 
     if (_verbose)
-      std::cout << "[run,subrun,event] -> [ " << run << ", " << subrun << ", " << event << "]" << std::endl;
+      std::cout << std::endl << std::endl << "[run,subrun,event] -> [ " << run << ", " << subrun << ", " << event << "]" << std::endl;
 
     // create a multi-map object to store
     // pmt -> [ idx of wf for that pmt ]
@@ -100,6 +100,15 @@ namespace larlite {
     // create output ef_opdetwaveform
     auto out_opdetwaveform = storage->get_data<event_opdetwaveform>("mergedwf");
 
+    storage->set_id(run,subrun,event);
+
+    // have we found any wfs to save? if no, return
+    if (wfMap.size() == 0){
+      if (_verbose)
+	std::cout << "NO WF FOR THIS EVENT -> SKIP " << std::endl;
+      return true;
+    }
+
     // now that we know the time-interval needed
     // create a wf of that size
     size_t ticks = (size_t)((wf_t_max-wf_t_min)/_sampling);
@@ -112,7 +121,10 @@ namespace larlite {
     // loop through all PMTs
     for (int pmt=0; pmt < 32; pmt++){
 
-      std::vector<short>(ticks,0);
+      larlite::opdetwaveform mergedWf;
+      mergedWf.resize(ticks,_baseline);
+      if (_verbose)
+	std::cout << "merged wf has " << mergedWf.size() << " ticks" << std::endl;
 
       // run through multimap entries for this PMT and add their ticks
       // at the appropriate times
@@ -127,8 +139,33 @@ namespace larlite {
       std::pair <std::multimap<int,size_t>::iterator, std::multimap<int,size_t>::iterator> ret;
       ret = wfMap.equal_range(pmt);
 
-      for (std::multimap<int,size_t>::iterator it = ret.first; it != ret.second; it++)
-	std::cout << "\t@ idx " << it->second << std::endl;
+      for (std::multimap<int,size_t>::iterator it = ret.first; it != ret.second; it++){
+	
+	// get the wf
+	auto const& wf = ev_opdetwaveform->at(it->second);
+
+	// get start tick for this wf
+	size_t start_tick = (wf.TimeStamp() - trig_time - wf_t_min) / _sampling;
+
+	if (_verbose){
+	  std::cout << "wf start time : " << wf.TimeStamp() - trig_time << std::endl;
+	  std::cout << "wf start tick : " << start_tick << "\t end tick : " << start_tick + wf.size() << std::endl;
+	}
+
+	size_t t_max = wf.size();
+	if ( (wf.size()+start_tick) >= mergedWf.size() )
+	  t_max = mergedWf.size() - start_tick - 1;
+
+	for (size_t tick = 0; tick < t_max; tick++)
+	  mergedWf[tick+start_tick] = wf[tick];
+	
+	mergedWf.SetTimeStamp(wf.TimeStamp());
+	mergedWf.SetChannelNumber(pmt);
+	
+	out_opdetwaveform->push_back(mergedWf);
+	
+      } // for all found wfs for this pmt
+      
 
     }// for all pmts
 	

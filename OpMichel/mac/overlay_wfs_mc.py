@@ -11,6 +11,7 @@ if len(sys.argv) < 2:
 from ROOT import gSystem,TMath
 from ROOT import larlite as fmwk
 from ROOT import larutil
+from ROOT import signalana
 
 # Create ana_processor instance
 my_proc = fmwk.ana_processor()
@@ -28,22 +29,30 @@ my_proc.set_ana_output_file("michel_mc.root");
 # Specify data output root file name
 my_proc.set_output_file("")
 
+# muon PE thershold
+muonPE = 50
+
+# signal processing module instance
+signalProcessor = signalana.SignalProcessing()
+signalProcessor.setHitPEDifferentialThresh(1)#PE
+signalProcessor.setDeadTime(3)#usec
+signalProcessor.setMuonPEThresh(muonPE)#usec
+
 mergewfs = fmwk.OverlayWF_Paddles()
 mergewfs.setPMTProducer("saturation")
 #mergewfs.setProducer("pmtreadout")
 mergewfs.setTrigProducer("triggersim")
 #mergewfs.setTrigProducer("daq")
+mergewfs.setSignalProcessor(signalProcessor)
 mergewfs.useMC(True)
-mergewfs.setMuonPEThresh(50)#PE
-mergewfs.setHitPEDifferentialThresh(1)#PE
-mergewfs.setBaselinePE(2)#PE
-mergewfs.setDeadTime(3)#usec
+mergewfs.setMuonPEThresh(muonPE)#PE
+mergewfs.setNoisePE(2)#PE
 mergewfs.setRequireMuonPeak(True)
 mergewfs.setMaximumMuonTime(25)
 mergewfs.setMaximumMuonNumber(1)
 mergewfs.setLateLightAmplitude(0.25)
 mergewfs.setLateLightTimeConstant(0.85)
-mergewfs.setVerbose(False)
+mergewfs.setVerbose(True)
 my_proc.add_process(mergewfs)
 
 print

@@ -36,7 +36,7 @@ mergewfs.setTrigProducer("daq")
 mergewfs.useMC(False)
 mergewfs.setMuonPEThresh(50)#PE
 mergewfs.setHitPEDifferentialThresh(1)#PE
-mergewfs.setBaselinePE(2)#PE
+mergewfs.setNoisePE(2)#PE
 mergewfs.setDeadTime(3)#usec
 mergewfs.setRequireMuonPeak(True)
 mergewfs.setMaximumMuonTime(0.2)

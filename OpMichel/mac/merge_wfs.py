@@ -20,22 +20,22 @@ for x in xrange(len(sys.argv)-1):
     my_proc.add_input_file(sys.argv[x+1])
 
 # Specify IO mode
-my_proc.set_io_mode(fmwk.storage_manager.kREAD)
+my_proc.set_io_mode(fmwk.storage_manager.kBOTH)
 
 # Specify analysis output root file name
-my_proc.set_ana_output_file("michel_mc.root");
-
-# Specify data output root file name
-my_proc.set_output_file("")
+my_proc.set_ana_output_file("merged_wfs_ana.root");
+# Specify output data-product file anme
+my_proc.set_output_file("merged_wfs.root")
 
 mergewfs = fmwk.WaveformMerger()
 mergewfs.setPMTProducer("saturation")
 #mergewfs.setProducer("pmtreadout")
 #mergewfs.setTrigProducer("triggersim")
 mergewfs.setTrigProducer("daq")
-mergewfs.setVerbose(True)
-mergewfs.setStartTime(0.)
-mergewfs.setEndTime(500.4)
+mergewfs.setVerbose(False)
+mergewfs.setBaseline(0)
+mergewfs.setStartTime(-1.5)
+mergewfs.setEndTime(24)
 my_proc.add_process(mergewfs)
 
 print
