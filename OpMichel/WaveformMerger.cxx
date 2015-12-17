@@ -159,9 +159,9 @@ namespace larlite {
 	for (size_t tick = 0; tick < t_max; tick++)
 	  mergedWf[tick+start_tick] = wf[tick];
 	
-	mergedWf.SetTimeStamp(wf.TimeStamp());
+	mergedWf.SetTimeStamp(wf_t_min);
 	mergedWf.SetChannelNumber(pmt);
-	
+
 	out_opdetwaveform->push_back(mergedWf);
 	
       } // for all found wfs for this pmt

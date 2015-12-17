@@ -130,6 +130,7 @@ namespace larlite {
 
     _event = storage->get_data<event_opdetwaveform>(_PMTproducer)->event_id();
 
+    /*
 
     // for each channel, prepare a map that connects
     // 1) pmt -> ev_opdetwaveform index w/ beam-gate
@@ -193,7 +194,7 @@ namespace larlite {
     _hit_time.clear();
     
     // prepare vector to hold overlay of all WFs
-    std::vector<double> overlay_wf(preticks+beamGateTicks,0);
+
     // clear and re-size per-PMT waveforms
     resizeWaveforms(preticks+beamGateTicks);
 
@@ -222,20 +223,38 @@ namespace larlite {
       // if no beam-gate window -> something went wrong
       else
 	std::cout << "did not find a beam-gate for this PMT!!! WHAT!!!" << std::endl;
+
+    */
+
+    // overlay wf
+    std::vector<double> overlay_wf(ev_opdetwaveform->at(0).size(),0);
+    resizeWaveforms(ev_opdetwaveform->at(0).size());
+
+    // loop through WFs
+    for (size_t i=0; i < ev_opdetwaveform->size(); i++){
+
+      auto const& wf = ev_opdetwaveform->at(i);
+
+      short pmt = wf.ChannelNumber();
+
+      if (pmt >= 32)
+	continue;
+      
       // add this waveform to the tree
       // calculate and subtract baseline for this waveform
       // additionally change scale to PE (for now /20)
       std::vector<double> baseline;
       std::vector<double> pmt_wf;//(padded_wf.size(),0.);
-      pmt_wf.resize(preticks+beamGateTicks);
-      _signalProcessor.getBaseline(padded_wf,baseline);
-      for (size_t idx=0; idx < (preticks+beamGateTicks); idx++){
-	double pe = ( (double)(padded_wf[idx]) - baseline[idx] ) / 20.;
+      pmt_wf.resize(wf.size());
+      _signalProcessor.getBaseline(wf,baseline);
+      for (size_t idx=0; idx < wf.size(); idx++){
+	double pe = ( (double)(wf[idx]) - baseline[idx] ) / 20.;
 	// append to the WF and divide by the gain (now a flat factor of 20 ADC / pe )
 	overlay_wf[idx] += pe;
 	_pmt_wfs[pmt][idx] += pe;
       }
     }// for all PMTs
+
 
     // now calculate the hits on the overlay wf
 

@@ -33,10 +33,13 @@ mergewfs.setPMTProducer("saturation")
 #mergewfs.setTrigProducer("triggersim")
 mergewfs.setTrigProducer("daq")
 mergewfs.setVerbose(False)
-mergewfs.setBaseline(0)
+mergewfs.setBaseline(2048)
 mergewfs.setStartTime(-1.5)
 mergewfs.setEndTime(24)
 my_proc.add_process(mergewfs)
+
+my_proc.set_data_to_write(fmwk.data.kOpDetWaveform,'mergedwf')
+my_proc.set_data_to_write(fmwk.data.kTrigger,'daq')
 
 print
 print  "Finished configuring ana_processor. Start event loop!"
