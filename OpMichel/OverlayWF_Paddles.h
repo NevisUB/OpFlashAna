@@ -5,7 +5,7 @@
  * 
  * \brief Class def header for a class OverlayWF_Paddles
  *
- * @author david
+ * @author david caratelli
  */
 
 /** \addtogroup OpMichel
@@ -16,6 +16,7 @@
 #define LARLITE_OVERLAYWF_PADDLES_H
 
 #include "Analysis/ana_base.h"
+#include "SignalProcessing.h"
 
 namespace larlite {
   /**
@@ -45,12 +46,8 @@ namespace larlite {
     void useMC(bool on) { _useMC = on; }
     // PE threshold to claim a muon pulse
     void setMuonPEThresh(double pe) { _muon_PE_thresh = pe; }
-    // PE threshold to claim a hit
-    void setHitPEDifferentialThresh(double pe) { _hit_PE_differential_thresh = pe; }
-    // set dead-time for muons
-    void setDeadTime(double t) { _deadTime = t; }
     // set the baseline PE (what to expect at any given moment)
-    void setBaselinePE(double pe) { _baseline_PE = pe; }
+    void setNoisePE(double pe) { _noise_PE = pe; }
     // set whether to require a muon peak
     void setRequireMuonPeak(bool on) { _require_muon_peak = on; }
     // set maximum time for muon peak
@@ -63,6 +60,8 @@ namespace larlite {
     void setLateLightTimeConstant(double t) { _ll_tau = t; }
     // set verobisty flag
     void setVerbose(bool on) { _verbose = on; }
+    // set the signal processing module instance
+    void setSignalProcessor(signalana::SignalProcessing s) { _signalProcessor = s; }
 
     // get the signifiance of the value o coming from a 
     // poisson distribution with expectation e
@@ -85,42 +84,11 @@ namespace larlite {
     // maximum number of muons allowed in event's beam-gate RO window
     size_t _max_muon_number;
 
+    double _muon_PE_thresh;
+
     // resize waveforms for all 32 PMTs
     void resizeWaveforms(const size_t& nticks);
 
-    // find the time of a pulse based on the differential
-    // of the waveform
-    // search for peaks followed by zero-crossings
-    // the zero-crossing is the time of the pulse
-    void findPulseTimes(const std::vector<double>& wfdiff,
-			std::vector<size_t>& pulseTicks);
-    // PE threshold for hit amplitude
-    double _hit_PE_differential_thresh;
-
-    
-    // for each hit tick time, search in a neightborhood
-    // of that tick for the local maximum
-    // that will be the corrected hit time
-    // how far out to search depends on shaping time
-    void findLocalMaxima(const std::vector<double>& wf,
-			 std::vector<size_t>& hitTicks);
-
-    // given a vector of values and time-ticks
-    // return a vector of times (in us)
-    // and a vector of values for those points
-    void getPoints(const std::vector<double>& wf,
-		   const std::vector<size_t>& pts,
-		   std::vector<double>& times,
-		   std::vector<double>& vals);
-
-    // given the waveform and the tick-values at which
-    // the pulses are to be found return a vector of 
-    // peak-times [usec] and ADCs [baseline subtracted]
-    // for each point, scan neighbors to find the true maximum
-    void getPeaks(const std::vector<double>& wf,
-		  const std::vector<size_t>& ticks,
-		  std::vector<double>& times,
-		  std::vector<double>& PEs);
 
     // exponential function with which to model the late-light
     double lateLight(const double& time,
@@ -131,32 +99,9 @@ namespace larlite {
     // late-light time-constant
     double _ll_tau;
 
-    
-    // function to get rms and baseline
-    void getRMS(const std::vector<double>& wf,
-		double& base, double& rms);
+    // instance of the SignalProcessing class
+    signalana::SignalProcessing _signalProcessor;
 
-
-    // function to get the rolling baseline from a vector
-    void getBaseline(const std::vector<short>& wf,
-		     std::vector<double>& baseline);
-
-
-    // get the differential waveform
-    void getDifferential(const std::vector<double>& wf,
-			 std::vector<double>& wfdiff);
-
-    // function to find all muon peaks in a waveform
-    void getMuonPeaksTicks(const std::vector<double>& wf,
-			   std::vector<size_t>& muonTicks);
-    // threshold for muon in PE
-    double _muon_PE_thresh;
-
-    // function that applies a dead-time for the muon peaks
-    void applyMuonDeadTime(std::vector<double>& peakTimes,
-			   std::vector<double>& peakAmps);
-    // dead-time for muons
-    double _deadTime;
 
     // function that returns the poisson expectation for
     // the value k for a poisson distribution of mean lambda
@@ -176,7 +121,7 @@ namespace larlite {
 
 
     // baseline PE to be used in developing PE expectation 
-    double _baseline_PE;
+    double _noise_PE;
 
     // producer names
     std::string _PMTproducer;
