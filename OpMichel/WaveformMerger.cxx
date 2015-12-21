@@ -9,6 +9,8 @@
 namespace larlite {
 
   WaveformMerger::WaveformMerger()
+    :
+    _tree(nullptr)
   {
     _name = "WaveformMerger";
     _fout = 0;
@@ -16,10 +18,51 @@ namespace larlite {
     _t_min = 0;
     _t_max = 23.4;
     _baseline = 0;
+    _write = false;
     _verbose = false;
   }
 
   bool WaveformMerger::initialize() {
+
+    _wfs.resize(32);
+
+    _tree = new TTree("_tree","merged waveform tree");
+    _tree->Branch("_event",&_event,"event/I");
+    _tree->Branch("_run",&_run,"run/I");
+    _tree->Branch("_subrun",&_subrun,"subrun/I");
+    _tree->Branch("_timestamp",&_timestamp,"timestamp/D");
+    _tree->Branch("wf00","std::vector<short>",&_wfs[0]);
+    _tree->Branch("wf01","std::vector<short>",&_wfs[1]);
+    _tree->Branch("wf02","std::vector<short>",&_wfs[2]);
+    _tree->Branch("wf03","std::vector<short>",&_wfs[3]);
+    _tree->Branch("wf04","std::vector<short>",&_wfs[4]);
+    _tree->Branch("wf05","std::vector<short>",&_wfs[5]);
+    _tree->Branch("wf06","std::vector<short>",&_wfs[6]);
+    _tree->Branch("wf07","std::vector<short>",&_wfs[7]);
+    _tree->Branch("wf08","std::vector<short>",&_wfs[8]);
+    _tree->Branch("wf09","std::vector<short>",&_wfs[9]);
+    _tree->Branch("wf10","std::vector<short>",&_wfs[10]);
+    _tree->Branch("wf11","std::vector<short>",&_wfs[11]);
+    _tree->Branch("wf12","std::vector<short>",&_wfs[12]);
+    _tree->Branch("wf13","std::vector<short>",&_wfs[13]);
+    _tree->Branch("wf14","std::vector<short>",&_wfs[14]);
+    _tree->Branch("wf15","std::vector<short>",&_wfs[15]);
+    _tree->Branch("wf16","std::vector<short>",&_wfs[16]);
+    _tree->Branch("wf17","std::vector<short>",&_wfs[17]);
+    _tree->Branch("wf18","std::vector<short>",&_wfs[18]);
+    _tree->Branch("wf19","std::vector<short>",&_wfs[19]);
+    _tree->Branch("wf20","std::vector<short>",&_wfs[20]);
+    _tree->Branch("wf21","std::vector<short>",&_wfs[21]);
+    _tree->Branch("wf22","std::vector<short>",&_wfs[22]);
+    _tree->Branch("wf23","std::vector<short>",&_wfs[23]);
+    _tree->Branch("wf24","std::vector<short>",&_wfs[24]);
+    _tree->Branch("wf25","std::vector<short>",&_wfs[25]);
+    _tree->Branch("wf26","std::vector<short>",&_wfs[26]);
+    _tree->Branch("wf27","std::vector<short>",&_wfs[27]);
+    _tree->Branch("wf28","std::vector<short>",&_wfs[28]);
+    _tree->Branch("wf29","std::vector<short>",&_wfs[29]);
+    _tree->Branch("wf30","std::vector<short>",&_wfs[30]);
+    _tree->Branch("wf31","std::vector<short>",&_wfs[31]);
 
     return true;
   }
@@ -46,12 +89,12 @@ namespace larlite {
       return false;
     }
 
-    auto event  = ev_opdetwaveform->event_id();
-    auto subrun = ev_opdetwaveform->subrun();
-    auto run    = ev_opdetwaveform->run();
+    _event  = ev_opdetwaveform->event_id();
+    _subrun = ev_opdetwaveform->subrun();
+    _run    = ev_opdetwaveform->run();
 
     if (_verbose)
-      std::cout << std::endl << std::endl << "[run,subrun,event] -> [ " << run << ", " << subrun << ", " << event << "]" << std::endl;
+      std::cout << std::endl << std::endl << "[run,subrun,event] -> [ " << _run << ", " << _subrun << ", " << _event << "]" << std::endl;
 
     // create a multi-map object to store
     // pmt -> [ idx of wf for that pmt ]
@@ -100,7 +143,7 @@ namespace larlite {
     // create output ef_opdetwaveform
     auto out_opdetwaveform = storage->get_data<event_opdetwaveform>("mergedwf");
 
-    storage->set_id(run,subrun,event);
+    storage->set_id(_run,_subrun,_event);
 
     // have we found any wfs to save? if no, return
     if (wfMap.size() == 0){
@@ -148,31 +191,42 @@ namespace larlite {
 	size_t start_tick = (wf.TimeStamp() - trig_time - wf_t_min) / _sampling;
 
 	if (_verbose){
-	  std::cout << "wf start time : " << wf.TimeStamp() - trig_time << std::endl;
-	  std::cout << "wf start tick : " << start_tick << "\t end tick : " << start_tick + wf.size() << std::endl;
+	  std::cout << "wf start time : " << wf.TimeStamp() - trig_time
+		    << "\tstart tick : " << start_tick << "\t end tick : " << start_tick + wf.size() << std::endl;
 	}
 
 	size_t t_max = wf.size();
 	if ( (wf.size()+start_tick) >= mergedWf.size() )
 	  t_max = mergedWf.size() - start_tick - 1;
-
+	
 	for (size_t tick = 0; tick < t_max; tick++)
 	  mergedWf[tick+start_tick] = wf[tick];
-	
-	mergedWf.SetTimeStamp(wf_t_min);
-	mergedWf.SetChannelNumber(pmt);
 
-	out_opdetwaveform->push_back(mergedWf);
+      }// for all wfs for a given channel
 	
-      } // for all found wfs for this pmt
+      _wfs[pmt] = (std::vector<short>)mergedWf;
       
-
+      mergedWf.SetTimeStamp(wf_t_min);
+      mergedWf.SetChannelNumber(pmt);
+      
+      out_opdetwaveform->push_back(mergedWf);
+      
     }// for all pmts
+
+    _timestamp = wf_t_min;
+
+    // write tree
+    _tree->Fill();
 	
     return true;
   }
 
   bool WaveformMerger::finalize() {
+
+    if (_fout && _write){
+      _fout->cd();
+      if (_tree) { _tree->Write(); }
+    }
 
     return true;
   }

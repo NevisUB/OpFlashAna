@@ -16,6 +16,7 @@
 #define LARLITE_WAVEFORMMERGER_H
 
 #include "Analysis/ana_base.h"
+#include "TTree.h"
 
 namespace larlite {
   /**
@@ -49,6 +50,8 @@ namespace larlite {
     void setBaseline(short b) { _baseline = b; }
     // set the verbosity
     void setVerbose(bool on) { _verbose = on; }
+    // set if to write wfs to tree
+    void setWriteTree(bool on) { _write = on; }
 
   protected:
 
@@ -68,6 +71,16 @@ namespace larlite {
     // producer names
     std::string _PMTproducer;
     std::string _TRIGproducer;
+
+    // save the waveforms to a tree
+    TTree* _tree;
+    int _event;
+    int _run;
+    int _subrun;
+    double _timestamp;
+    std::vector< std::vector<short> > _wfs;
+    // boolean for whether to save or not
+    bool _write;
     
   };
 }
